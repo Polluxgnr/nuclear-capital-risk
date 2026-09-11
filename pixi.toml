@@ -1,0 +1,23 @@
+[project]
+name = "nuclear-capital-risk"
+version = "0.1.0"
+description = "Empirical and Financial Assessment of Nuclear Project Finance & Fleet Life Extension (LTO)"
+authors = ["Climate Risk Analyst & Sustainability Consultant <student@essec.edu>"]
+channels = ["conda-forge"]
+platforms = ["win-64", "linux-64", "osx-arm64", "osx-64"]
+
+[dependencies]
+python = ">=3.11"
+pandas = ">=2.0.0"
+numpy = ">=1.24.0"
+openpyxl = ">=3.1.0"
+matplotlib = ">=3.8.0"
+seaborn = ">=0.13.0"
+scipy = ">=1.11.0"
+
+[tasks]
+run = "python main.py"
+process = "python -c 'from src.data_processing import process_nuclear_data; process_nuclear_data()'"
+model = "python -c 'from src.model import run_financial_models; run_financial_models()'"
+visualize = "python -c 'from src.visualization import generate_all_figures; generate_all_figures()'"
+test = "python -c 'import src.data_processing, src.model, src.visualization; print(\"All modules imported successfully\")'"
