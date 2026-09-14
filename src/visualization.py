@@ -1,12 +1,14 @@
 """Publication-Ready Visualizations Module for Nuclear Capital Risk Analysis.
 
-Generates 4 high-resolution (300 DPI) figures:
-- Fig 1: Empirical distribution of construction durations by reactor type and geography.
+ESSEC / AIDAMS - Research & Emerging Topics in Data Science: Climate Risks (Fall 2026)
+Course Project: Nuclear Project Finance & Fleet Life Extension (LTO)
+
+Generates 5 publication-grade figures (300 DPI):
+- Fig 1: Empirical distribution of construction durations by technology and geography.
 - Fig 2: The 2026 Global Nuclear Age Pyramid highlighting the 40+ year cliff (181 GW at stake).
 - Fig 3: Capex escalation & IDC compounding curve as a function of construction delays (0 to 10 years).
 - Fig 4: LCOE comparison chart: 20-year LTO vs On-time Gen-III+ vs Delayed Gen-III+.
-
-ESSEC / AIDAMS - Research & Emerging Topics in Data Science: Climate Risks (Fall 2026)
+- Fig 5: 1x2 Geospatial Impact Map: 2026 Baseline vs 2035 Without LTO (visualizing the nuclear desert).
 """
 
 from __future__ import annotations
@@ -24,30 +26,32 @@ import seaborn as sns
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-# Style parameters for academic journal aesthetics
+# =============================================================================
+# PUBLICATION STYLING & PALETTE DEFINITIONS
+# =============================================================================
+# High-contrast, colorblind-safe palette calibrated for energy economics journals
 PALETTE = {
-    "lto": "#1b9e77",        # Emerald green
-    "gen3": "#2b5c8f",       # Institutional navy
-    "smr": "#d95f02",        # Warm terracotta
-    "cliff": "#d73027",      # Alert crimson
-    "wacc4": "#4575b4",      # Blue
-    "wacc55": "#74add1",     # Light blue
-    "wacc7": "#f46d43",      # Coral
-    "wacc85": "#d73027",     # Deep red
-    "wacc10": "#7f0000",     # Dark maroon
-    "neutral_dark": "#2b2b2b",
-    "neutral_light": "#f8f9fa",
+    "lto": "#1b9e77",        # Emerald green for life extension
+    "gen3": "#2b5c8f",       # Institutional navy for large GW new builds
+    "smr": "#d95f02",        # Warm terracotta for modular SMRs
+    "cliff": "#d73027",      # Alert crimson for the 40+ year cliff
+    "faded": "#bdc3c7",      # Faded grey for retired/turned-off units
+    "wacc4": "#4575b4",      # Low subsidized discount rate
+    "wacc55": "#74add1",     # Damodaran developed utilities WACC
+    "wacc7": "#f46d43",      # Baseline market WACC
+    "wacc85": "#d73027",     # Damodaran emerging markets WACC
+    "wacc10": "#7f0000",     # High merchant friction WACC
 }
 
 plt.rcParams.update({
     "font.family": "DejaVu Sans",
-    "font.size": 11,
-    "axes.titlesize": 13,
-    "axes.labelsize": 11,
-    "xtick.labelsize": 10,
-    "ytick.labelsize": 10,
-    "legend.fontsize": 10,
-    "figure.titlesize": 15,
+    "font.size": 10.5,
+    "axes.titlesize": 12.5,
+    "axes.labelsize": 11.0,
+    "xtick.labelsize": 9.5,
+    "ytick.labelsize": 9.5,
+    "legend.fontsize": 9.5,
+    "figure.titlesize": 14.0,
     "figure.dpi": 300,
     "savefig.dpi": 300,
     "savefig.bbox": "tight",
@@ -59,25 +63,38 @@ plt.rcParams.update({
 })
 
 
+# =============================================================================
+# FIGURE 1: CONSTRUCTION DURATION DISTRIBUTIONS
+# =============================================================================
+
 def plot_figure_1_construction_durations(
     df: pd.DataFrame,
     output_path: Path,
 ) -> None:
-    """Figure 1: Empirical distribution of construction durations by reactor type and geography.
+    """Figure 1: Empirical distribution of construction durations by technology and geography.
 
-    Panel A: Distribution by Reactor Type (PWR, BWR, PHWR, SMR/Other)
-    Panel B: Distribution by Major Geographic Region
+    Why this visual matters:
+    Financial models frequently make unrealistic assumptions of 5-year build times.
+    This chart confronts those pitchbook claims with 50 years of empirical data across
+    424 operational reactors, proving that delays are the empirical norm.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Cleaned fleet dataset.
+    output_path : Path
+        Output file path for saving PNG.
     """
-    logger.info("Generating Figure 1: Construction Duration Distributions...")
+    logger.info("Generating Figure 1: Empirical Construction Duration Distributions...")
 
-    # Filter for units with valid lead times (operating + completed)
+    # Filter for operating reactors with valid, positive lead times
     valid_df = df[
         (df["Construction_Lead_Time_Years"].notna())
         & (df["Construction_Lead_Time_Years"] > 0)
-        & (df["Construction_Lead_Time_Years"] <= 35)  # remove extreme frozen outliers > 35y
+        & (df["Construction_Lead_Time_Years"] <= 35)
     ].copy()
 
-    # Consolidate reactor types
+    # Consolidate reactor types into major classes
     type_map = {
         "PWR": "PWR",
         "BWR": "BWR",
@@ -85,16 +102,15 @@ def plot_figure_1_construction_durations(
         "SMR": "SMR / Demo",
     }
     valid_df["Plot_Type"] = valid_df["Reactor_Type_Clean"].map(lambda x: type_map.get(x, "Other"))
-    # Keep top 4 categories
     valid_df = valid_df[valid_df["Plot_Type"].isin(["PWR", "BWR", "PHWR (CANDU)", "Other"])]
 
-    # Filter regions with sufficient sample size
+    # Filter regions with statistically significant sample sizes
     top_regions = ["Northern America", "Eastern Asia", "Eastern Europe", "Western Europe"]
     valid_geo = valid_df[valid_df["Subregion"].isin(top_regions)].copy()
 
     fig, axes = plt.subplots(1, 2, figsize=(15, 6), sharey=True)
 
-    # Panel A: By Reactor Type
+    # Panel A: By Technology Class
     sns.boxplot(
         data=valid_df,
         x="Plot_Type",
@@ -123,10 +139,9 @@ def plot_figure_1_construction_durations(
     axes[0].set_xlabel("Reactor Technology Class", labelpad=8)
     axes[0].set_ylabel("Empirical Construction Lead Time (Years)", labelpad=8)
     axes[0].grid(True, axis="y")
-    axes[0].axhline(7.0, color="#d95f02", linestyle=":", linewidth=1.5, label="Standard Budget Nominal ($T_0=7$ yrs)")
+    axes[0].axhline(7.0, color="#d95f02", linestyle=":", linewidth=1.5, label="Nominal Budget Schedule (7.0 yrs)")
     axes[0].legend(loc="upper left", framealpha=0.9)
 
-    # Annotate stats on Panel A
     pwr_median = valid_df[valid_df["Plot_Type"] == "PWR"]["Construction_Lead_Time_Years"].median()
     pwr_mean = valid_df[valid_df["Plot_Type"] == "PWR"]["Construction_Lead_Time_Years"].mean()
     axes[0].text(
@@ -162,14 +177,14 @@ def plot_figure_1_construction_durations(
 
     axes[1].set_title("(B) Construction Lead Times Across Key Global Geographies", fontweight="bold", pad=12)
     axes[1].set_xlabel("Global Subregion", labelpad=8)
-    axes[1].set_ylabel("")  # shared y
+    axes[1].set_ylabel("")
     axes[1].grid(True, axis="y")
     axes[1].tick_params(axis="x", rotation=15)
-    axes[1].axhline(7.0, color="#d95f02", linestyle=":", linewidth=1.5, label="Standard Budget Nominal ($T_0=7$ yrs)")
+    axes[1].axhline(7.0, color="#d95f02", linestyle=":", linewidth=1.5, label="Nominal Budget Schedule (7.0 yrs)")
     axes[1].legend(loc="upper left", framealpha=0.9)
 
     plt.suptitle(
-        "Figure 1: Empirical Distribution of Global Nuclear Construction Lead Times (Historical Fleet)",
+        "Figure 1: Empirical Distribution of Global Nuclear Construction Lead Times",
         fontweight="bold", y=1.02, fontsize=14,
     )
     plt.tight_layout()
@@ -178,21 +193,30 @@ def plot_figure_1_construction_durations(
     logger.info(f"Figure 1 saved to: {output_path}")
 
 
+# =============================================================================
+# FIGURE 2: 2026 GLOBAL NUCLEAR AGE PYRAMID
+# =============================================================================
+
 def plot_figure_2_age_pyramid_cliff(
     df: pd.DataFrame,
     output_path: Path,
 ) -> None:
-    """Figure 2: The 2026 Global Nuclear Age Pyramid highlighting the 40+ year cliff (181 GW at stake)."""
+    """Figure 2: The 2026 Global Nuclear Age Pyramid highlighting the 40+ year cliff (181 GW).
+
+    Why this visual matters:
+    This chart reveals the imminent 'reinvestment wall'. Operating reactors are binned
+    into 5-year cohorts. The vertical line at 40 years reveals that 181.0 GW (44.4% of
+    the global fleet) is entering mandatory retirement or LTO license renewal.
+    """
     logger.info("Generating Figure 2: 2026 Global Nuclear Age Pyramid & 40+ Cliff...")
 
     op_df = df[df["Clean_Status"] == "operating"].copy()
 
-    # Bin into age bins of 5 years: [0-5), [5-10), ..., [50-55)
+    # Bin into 5-year age brackets: [0-5), [5-10), ..., [50-55)
     bin_edges = list(range(0, 60, 5))
     bin_labels = [f"{b}-{b+4}" for b in bin_edges[:-1]]
     op_df["Age_Bin"] = pd.cut(op_df["Age_2026"], bins=bin_edges, labels=bin_labels, right=False)
 
-    # Group by age bin and cliff edge status
     bin_summary = op_df.groupby("Age_Bin", observed=False).agg(
         Capacity_GW=("Capacity_GW", "sum"),
         Unit_Count=("Project Name", "count"),
@@ -216,7 +240,6 @@ def plot_figure_2_age_pyramid_cliff(
         alpha=0.9,
     )
 
-    # Add data labels on top of bars
     for bar, count in zip(bars, bin_summary["Unit_Count"]):
         height = bar.get_height()
         if height > 0:
@@ -230,12 +253,10 @@ def plot_figure_2_age_pyramid_cliff(
                 fontweight="bold",
             )
 
-    # Vertical threshold line separating < 40 and >= 40
-    # Bin '40-44' is index 8
+    # Vertical threshold line at 40 years
     cliff_idx = bin_labels.index("40-44")
     ax.axvline(cliff_idx - 0.5, color="#b2182b", linestyle="--", linewidth=2.0)
 
-    # Annotation callout box for 181 GW cliff
     cliff_capacity = op_df[op_df["Cliff_Edge_40plus"]]["Capacity_GW"].sum()
     cliff_units = op_df[op_df["Cliff_Edge_40plus"]]["Project Name"].count()
     total_capacity = op_df["Capacity_GW"].sum()
@@ -249,13 +270,12 @@ def plot_figure_2_age_pyramid_cliff(
         xy=(cliff_idx + 1.2, 75),
         xytext=(cliff_idx + 0.2, 85),
         arrowprops=dict(facecolor="#b2182b", shrink=0.08, width=1.5, headwidth=8),
-        fontsize=10.5,
+        fontsize=10.0,
         fontweight="bold",
         color="#7f0000",
         bbox=dict(boxstyle="square,pad=0.6", facecolor="#fee8c8", edgecolor="#e34a33", linewidth=1.5),
     )
 
-    # Styling
     ax.set_title(
         "Figure 2: The 2026 Global Nuclear Fleet Age Pyramid & Impending 40+ Year Operational Cliff",
         fontweight="bold", pad=16, fontsize=13,
@@ -266,11 +286,10 @@ def plot_figure_2_age_pyramid_cliff(
     ax.yaxis.set_major_locator(ticker.MultipleLocator(20))
     ax.grid(True, axis="y", linestyle="--", alpha=0.7)
 
-    # Custom Legend
     from matplotlib.patches import Patch
     legend_elements = [
         Patch(facecolor="#2b5c8f", edgecolor="#1a1a1a", label="Operating Fleet (< 40 Years: 226.8 GW)"),
-        Patch(facecolor=PALETTE["cliff"], edgecolor="#1a1a1a", label="Cliff Edge Fleet (≥ 40 Years: 181.0 GW)"),
+        Patch(facecolor=PALETTE["cliff"], edgecolor="#1a1a1a", label="Cliff Edge Fleet (\u2265 40 Years: 181.0 GW)"),
     ]
     ax.legend(handles=legend_elements, loc="upper left", framealpha=0.95)
 
@@ -280,16 +299,25 @@ def plot_figure_2_age_pyramid_cliff(
     logger.info(f"Figure 2 saved to: {output_path}")
 
 
+# =============================================================================
+# FIGURE 3: CAPEX ESCALATION & IDC COMPOUNDING CURVES
+# =============================================================================
+
 def plot_figure_3_idc_compounding_curve(
     df_capex: pd.DataFrame,
     output_path: Path,
 ) -> None:
-    """Figure 3: Capex escalation & IDC compounding curve as a function of construction delays (0 to 10 years)."""
+    """Figure 3: Capex escalation & IDC compounding curve over delays across WACC regimes.
+
+    Why this visual matters:
+    Demonstrates the non-linear math of debt compounding: interest does not accrue
+    linearly. In high WACC environments (7-10%), a multi-year delay doubles the total
+    capital cost per kilowatt, destroying utility project economics.
+    """
     logger.info("Generating Figure 3: Capex Escalation & IDC Compounding Curve...")
 
     fig, ax = plt.subplots(figsize=(11, 6.5))
 
-    # Plot Gen-III+ under various WACCs
     gen3_data = df_capex[df_capex["Technology"] == "Gen-III+"].copy()
 
     wacc_styles = [
@@ -313,7 +341,7 @@ def plot_figure_3_idc_compounding_curve(
             markersize=5,
         )
 
-    # Plot SMR at 7% and 10%
+    # SMR baseline at 7%
     smr_7 = df_capex[(df_capex["Technology"] == "SMR") & (df_capex["WACC"] == 0.07)].sort_values("Delay_Years")
     ax.plot(
         smr_7["Delay_Years"],
@@ -326,7 +354,7 @@ def plot_figure_3_idc_compounding_curve(
         markersize=5,
     )
 
-    # Plot 20-yr LTO as reference flat line
+    # 20-yr LTO reference line
     lto_cost = df_capex[(df_capex["Technology"] == "20-yr LTO") & (df_capex["Delay_Years"] == 0) & (df_capex["WACC"] == 0.07)]["Capex_Total_kW"].values[0]
     ax.axhline(
         lto_cost,
@@ -336,10 +364,8 @@ def plot_figure_3_idc_compounding_curve(
         label=f"20-yr LTO Refurbishment (~${lto_cost:,.0f}/kW)",
     )
 
-    # Highlight Overnight Benchmark
     ax.axhline(7500, color="#737373", linestyle=":", linewidth=1.2, label="Gen-III+ Overnight Capex ($7,500/kW)")
 
-    # Annotation of IDC escalation
     cost_ontime_10 = gen3_data[(gen3_data["WACC"] == 0.10) & (gen3_data["Delay_Years"] == 0)]["Capex_Total_kW"].values[0]
     cost_delayed_10 = gen3_data[(gen3_data["WACC"] == 0.10) & (gen3_data["Delay_Years"] == 7)]["Capex_Total_kW"].values[0]
     ax.annotate(
@@ -371,14 +397,17 @@ def plot_figure_3_idc_compounding_curve(
     logger.info(f"Figure 3 saved to: {output_path}")
 
 
+# =============================================================================
+# FIGURE 4: LCOE COMPARISON ACROSS STRATEGIES
+# =============================================================================
+
 def plot_figure_4_lcoe_comparison(
     df_lcoe: pd.DataFrame,
     output_path: Path,
 ) -> None:
-    """Figure 4: LCOE comparison chart: 20-year LTO vs On-time Gen-III+ vs Delayed Gen-III+ across WACC scenarios."""
+    """Figure 4: LCOE comparison chart: 20-yr LTO vs On-time Gen-III+ vs Delayed Gen-III+."""
     logger.info("Generating Figure 4: LCOE Comparison LTO vs New-Build...")
 
-    # Filter specific representative investment cases
     wacc_list = [0.04, 0.055, 0.07, 0.085, 0.10]
     wacc_labels = ["4.0%\n(Green)", "5.5%\n(Damodaran Dev)", "7.0%\n(Baseline)", "8.5%\n(Damodaran EM)", "10.0%\n(Merchant)"]
 
@@ -406,7 +435,7 @@ def plot_figure_4_lcoe_comparison(
             lcoe_vals.append(val)
 
         offset = (i - 2) * width
-        rects = ax.bar(
+        ax.bar(
             x + offset,
             lcoe_vals,
             width,
@@ -417,10 +446,8 @@ def plot_figure_4_lcoe_comparison(
             alpha=0.9,
         )
 
-    # Wholesale Power Price benchmark bands ($60 - $90 / MWh)
     ax.axhspan(60, 90, color="#d9d9d9", alpha=0.3, label="Wholesale Baseload Power Price Range ($60–$90/MWh)")
 
-    # Annotation of the LTO resilience
     lto_4 = df_lcoe[(df_lcoe["Technology"] == "20-yr LTO") & (df_lcoe["Delay_Years"] == 0) & (df_lcoe["WACC"] == 0.04)]["LCOE_Total"].values[0]
     lto_10 = df_lcoe[(df_lcoe["Technology"] == "20-yr LTO") & (df_lcoe["Delay_Years"] == 0) & (df_lcoe["WACC"] == 0.10)]["LCOE_Total"].values[0]
     gen3_del_10 = df_lcoe[(df_lcoe["Technology"] == "Gen-III+") & (df_lcoe["Delay_Years"] == 7) & (df_lcoe["WACC"] == 0.10)]["LCOE_Total"].values[0]
@@ -466,59 +493,81 @@ def plot_figure_4_lcoe_comparison(
     logger.info(f"Figure 4 saved to: {output_path}")
 
 
+# =============================================================================
+# FIGURE 5: 1x2 GEOSPATIAL IMPACT VISUAL (2026 BASELINE VS 2035 WITHOUT LTO)
+# =============================================================================
+
 def plot_fig5_geospatial_cliff(
     df: pd.DataFrame,
     output_path: Path,
 ) -> None:
-    """Figure 5: Global Geospatial Map of the 40+ Year Nuclear Operational Cliff.
+    """Figure 5: 1x2 Geospatial Impact Map - 2026 Baseline vs. 2035 Without LTO.
 
-    Plots operating reactors < 40 years as blue dots and >= 40 years as bright red bubbles.
+    Why this 1x2 visual matters for Strategy Consulting & Policy:
+    Showing a single map tells only half the story. By presenting a side-by-side
+    comparison:
+    - Left Panel ("2026 Baseline"): Shows the dense, robust operating nuclear fleet
+      delivering zero-carbon baseload across North America, Europe, and Asia.
+    - Right Panel ("2035 Without LTO"): Visually 'turns off' the 181 GW of cliff
+      reactors, exposing a devastating geographic 'nuclear desert' where mature grids
+      lose critical inertia and are forced to burn gas.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Processed nuclear fleet dataset with Latitude, Longitude, and Cliff flags.
+    output_path : Path
+        Target save path.
     """
-    logger.info("Generating Figure 5: Global Geospatial Cliff Map...")
+    logger.info("Generating Figure 5: 1x2 Geospatial Impact Visual (Baseline vs. 2035 Cliff)...")
 
     op_df = df[df["Clean_Status"] == "operating"].copy()
     op_df["Latitude"] = pd.to_numeric(op_df["Latitude"], errors="coerce")
     op_df["Longitude"] = pd.to_numeric(op_df["Longitude"], errors="coerce")
     valid_coords = op_df[op_df["Latitude"].notna() & op_df["Longitude"].notna()].copy()
 
-    fig, ax = plt.subplots(figsize=(15, 8.5))
-
-    # Try loading world landmass from data/raw/world.json using geopandas
     project_root = Path(__file__).resolve().parent.parent
     world_json_path = project_root / "data" / "raw" / "world.json"
 
-    world_loaded = False
+    world_gdf = None
     if world_json_path.exists():
         try:
             import geopandas as gpd
-            world = gpd.read_file(world_json_path)
-            world.plot(ax=ax, color="#e8ecf0", edgecolor="#c4cdd5", linewidth=0.6)
-            world_loaded = True
+            world_gdf = gpd.read_file(world_json_path)
         except Exception as e:
-            logger.warning(f"Could not plot world map via geopandas: {e}")
+            logger.warning(f"Geopandas background map loading skipped: {e}")
 
-    if not world_loaded:
-        # Fallback background
-        ax.set_facecolor("#f4f7f9")
+    fig, axes = plt.subplots(1, 2, figsize=(20, 8.5), sharex=True, sharey=True)
 
-    # Split into regular operating vs cliff edge (>= 40 years)
     regular_fleet = valid_coords[~valid_coords["Cliff_Edge_40plus"]]
     cliff_fleet = valid_coords[valid_coords["Cliff_Edge_40plus"]]
 
-    # 1. Plot Operating Fleet < 40 years (Blue dots)
-    ax.scatter(
+    for ax in axes:
+        if world_gdf is not None:
+            world_gdf.plot(ax=ax, color="#eef2f5", edgecolor="#cbd5e1", linewidth=0.6)
+        else:
+            ax.set_facecolor("#f8fafc")
+        ax.set_xlim(-130, 155)
+        ax.set_ylim(-40, 72)
+        ax.grid(True, linestyle=":", alpha=0.5, color="#94a3b8")
+        ax.set_xlabel("Longitude", labelpad=8, fontweight="bold")
+
+    axes[0].set_ylabel("Latitude", labelpad=8, fontweight="bold")
+
+    # -------------------------------------------------------------------------
+    # LEFT PANEL: 2026 Baseline Operating Fleet
+    # -------------------------------------------------------------------------
+    axes[0].scatter(
         regular_fleet["Longitude"],
         regular_fleet["Latitude"],
         c="#2b5c8f",
-        s=30,
-        alpha=0.65,
+        s=35,
+        alpha=0.75,
         edgecolors="none",
-        label=f"Operating Fleet < 40 Years ({len(regular_fleet)} units, {regular_fleet['Capacity_GW'].sum():.1f} GW)",
+        label=f"Operating < 40 Years ({len(regular_fleet)} units, {regular_fleet['Capacity_GW'].sum():.1f} GW)",
         zorder=3,
     )
-
-    # 2. Plot Cliff Edge Fleet >= 40 years (Bright red bubbles)
-    ax.scatter(
+    axes[0].scatter(
         cliff_fleet["Longitude"],
         cliff_fleet["Latitude"],
         c="#d73027",
@@ -526,45 +575,71 @@ def plot_fig5_geospatial_cliff(
         alpha=0.85,
         edgecolors="#7f0000",
         linewidths=0.9,
-        label=f"Cliff Edge Fleet \u2265 40 Years ({len(cliff_fleet)} units, {cliff_fleet['Capacity_GW'].sum():.1f} GW)",
+        label=f"At Stake \u2265 40 Years ({len(cliff_fleet)} units, {cliff_fleet['Capacity_GW'].sum():.1f} GW)",
         zorder=4,
     )
-
-    # Styling and Map Limits
-    ax.set_xlim(-130, 155)
-    ax.set_ylim(-45, 72)
-    ax.set_title(
-        "Figure 5: Global Distribution of Nuclear Assets & The Impending 40+ Year Operational Cliff",
-        fontweight="bold", pad=16, fontsize=14,
+    axes[0].set_title(
+        "(A) 2026 Baseline: Complete Global Operating Nuclear Fleet (407.8 GW)",
+        fontweight="bold", pad=12, fontsize=12.5,
     )
-    ax.set_xlabel("Longitude", labelpad=8, fontweight="bold")
-    ax.set_ylabel("Latitude", labelpad=8, fontweight="bold")
-    ax.grid(True, linestyle=":", alpha=0.5, color="#b0bec5")
+    axes[0].legend(loc="lower left", framealpha=0.95, fontsize=9.5)
 
-    # Summary Callout Banner
+    # -------------------------------------------------------------------------
+    # RIGHT PANEL: 2035 Without LTO (The Nuclear Desert)
+    # -------------------------------------------------------------------------
+    # Plot cliff reactors as faded ghost grey 'X' marks to show decommissioned units
+    axes[1].scatter(
+        cliff_fleet["Longitude"],
+        cliff_fleet["Latitude"],
+        c="#94a3b8",
+        marker="x",
+        s=40,
+        alpha=0.45,
+        label=f"Forced Shutdown Without LTO (-{len(cliff_fleet)} units, -{cliff_fleet['Capacity_GW'].sum():.1f} GW)",
+        zorder=3,
+    )
+    # Plot remaining younger fleet
+    axes[1].scatter(
+        regular_fleet["Longitude"],
+        regular_fleet["Latitude"],
+        c="#2b5c8f",
+        s=35,
+        alpha=0.85,
+        edgecolors="none",
+        label=f"Remaining Surviving Fleet ({len(regular_fleet)} units, {regular_fleet['Capacity_GW'].sum():.1f} GW)",
+        zorder=4,
+    )
+    axes[1].set_title(
+        "(B) 2035 Without LTO: The Nuclear Desert (44.4% of Global Baseload Extinguished)",
+        fontweight="bold", pad=12, fontsize=12.5, color="#b91c1c",
+    )
+    axes[1].legend(loc="lower left", framealpha=0.95, fontsize=9.5)
+
+    # Educational Callout Banner Across Bottom
     avoided_co2 = (cliff_fleet["Capacity_GW"].sum() * 1e6 * 8760 * 0.88 * 400.0) / 1e12
-    ax.text(
-        0.02, 0.04,
-        f"GLOBAL CLIFF SUMMARY (August 2026 Tracker):\n"
-        f"\u2022 Total Operating Fleet: {len(valid_coords)} units ({valid_coords['Capacity_GW'].sum():.1f} GW)\n"
-        f"\u2022 Cliff Fleet (\u2265 40 Years): {len(cliff_fleet)} units ({cliff_fleet['Capacity_GW'].sum():.1f} GW, 44.4% of fleet)\n"
-        f"\u2022 Avoided CO2 Emissions: {avoided_co2:.1f} Million Metric Tons / Year (vs. CCGT Gas)",
-        transform=ax.transAxes,
-        fontsize=9.5,
-        fontweight="bold",
-        va="bottom",
-        ha="left",
-        bbox=dict(boxstyle="round,pad=0.5", facecolor="#ffffff", edgecolor="#d73027", linewidth=1.2, alpha=0.95),
-        zorder=5,
+    cars_millions = avoided_co2 * 1e6 / 4.6 / 1e6
+
+    fig.text(
+        0.5, -0.02,
+        f"DECISION HORIZON (2026–2035): Preserving the 181.0 GW Cliff Fleet via 20-Yr LTO saves $1.14 Trillion vs. New Builds "
+        f"and avoids {avoided_co2:.1f} Mt CO2/yr (Equivalent to adding {cars_millions:.0f} Million passenger cars to roads).",
+        ha="center", fontsize=10.5, fontweight="bold", color="#1e293b",
+        bbox=dict(boxstyle="round,pad=0.5", facecolor="#fee2e2", edgecolor="#ef4444", linewidth=1.2),
     )
 
-    ax.legend(loc="upper left", framealpha=0.95, fontsize=9.5)
-
+    plt.suptitle(
+        "Figure 5: Geospatial Shockwave of the 40-Year Operational Cliff: 2026 Baseline vs. 2035 Without Life Extension",
+        fontweight="bold", y=1.02, fontsize=14.5,
+    )
     plt.tight_layout()
     plt.savefig(output_path, dpi=300)
     plt.close()
     logger.info(f"Figure 5 saved to: {output_path}")
 
+
+# =============================================================================
+# MASTER ORCHESTRATOR
+# =============================================================================
 
 def generate_all_figures(
     data_path: Optional[Union[str, Path]] = None,
@@ -594,7 +669,7 @@ def generate_all_figures(
     if not data_path.exists():
         raise FileNotFoundError(f"Processed dataset not found at {data_path}. Run data_processing first.")
 
-    logger.info(f"Reading processed data from: {data_path}")
+    logger.info(f"Reading processed fleet data from: {data_path}")
     df = pd.read_csv(data_path)
 
     capex_path = tables_dir / "sensitivity_capex_kw.csv"
@@ -618,7 +693,7 @@ def generate_all_figures(
     plot_figure_4_lcoe_comparison(df_lcoe, fig4_path)
     plot_fig5_geospatial_cliff(df, fig5_path)
 
-    logger.info("All 5 publication figures generated successfully at 300 DPI.")
+    logger.info("All 5 publication figures successfully rendered at 300 DPI.")
 
 
 if __name__ == "__main__":

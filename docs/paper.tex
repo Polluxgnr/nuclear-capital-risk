@@ -83,15 +83,15 @@ We ingest the August 2026 Global Nuclear Power Tracker \cite{gem2026tracker}, ca
 Calculating unit age as $\text{Age}_{2026} = 2026 - \text{Start Year}$, we uncover that \textbf{198 operating reactors} have attained or exceeded 40 years of service. As illustrated in \cref{fig:age_pyramid}, this represents \textbf{180.99\,GW (44.38\% of global operating nuclear capacity)}. Without synchronized life extensions, global electricity grids will face a severe supply shock by 2035.
 
 % --- FIGURE 5: Global Geospatial Cliff Map ---
-\begin{figure}[htbp]
+\begin{figure*}[htbp]
 \centering
-\includegraphics[width=\linewidth]{../outputs/figures/fig5_global_cliff_map.png}
-\caption{Global geospatial distribution of nuclear assets, contrasting operating reactors $<$ 40 years (blue dots) against the $\ge$ 40-year cliff fleet (red bubbles).}
+\includegraphics[width=\textwidth]{../outputs/figures/fig5_global_cliff_map.png}
+\caption{Geospatial shockwave of the 40-year operational cliff: (Panel A) 2026 Baseline showing all 424 operating units (407.8\,GW) vs. (Panel B) 2035 Without LTO, visually illustrating the resulting 'nuclear desert' where 181.0\,GW (44.4\%) of zero-carbon baseload is extinguished.}
 \label{fig:geo_map}
-\end{figure}
+\end{figure*}
 
-\subsection{Geospatial Asset Distribution}
-As mapped in \cref{fig:geo_map}, the aging cliff fleet is heavily concentrated in North America (78 units, 76.4\,GW), Western Europe (64 units, 62.1\,GW), and Eastern Asia (38 units, 31.8\,GW). This geospatial cluster threatens grid inertia across industrialized power markets.
+\subsection{Geospatial Asset Distribution \& Shockwave}
+As mapped in \cref{fig:geo_map}, the aging cliff fleet is heavily concentrated in North America (78 units, 76.4\,GW), Western Europe (64 units, 62.1\,GW), and Eastern Asia (38 units, 31.8\,GW). The side-by-side visualization in \cref{fig:geo_map} demonstrates that without LTO, Western industrialized grids will lose critical spinning inertia and weather-independent power by 2035.
 
 % --- FIGURE 1: Construction Duration Distributions ---
 \begin{figure}[htbp]
@@ -220,11 +220,13 @@ As presented in \cref{fig:lcoe_chart} and \cref{tab:lcoe_table}:
 \textit{(Sustainability Consultant Deliverable)}
 
 \subsection{The Carbon Opportunity Cost}
-Retiring the 180.99\,GW cliff fleet forces replacement with natural gas CCGT ($400\,\text{gCO}_2/\text{kWh}$ at 88\% CF), injecting:
+Retiring the 180.99\,GW cliff fleet forces replacement with natural gas CCGT ($400\,\text{gCO}_2/\text{kWh}$ at an 88\% CF), injecting:
 \begin{equation}
 \Delta \text{CO}_2 = 180.99 \times 10^6 \times 8760 \times 0.88 \times 400 \times 10^{-12} = \mathbf{558.1\,\text{Mt/yr}}
 \end{equation}
-into the atmosphere. This avoided carbon cliff exceeds the annual emissions of France or the UK.
+into the atmosphere. This avoided carbon cliff exceeds the entire national annual emissions of France or the UK, and is equivalent to adding \textbf{121.3 Million passenger vehicles} to the road. 
+
+\textit{Methodological Justification:} In high-voltage grids, intermittent renewables cannot replace synchronous thermal inertia without unbuilt multi-day battery or hydrogen storage. Empirically (e.g. California post-San Onofre, Germany post-Atomausstieg), retiring nuclear reactors is offset by gas CCGT running at baseload availability.
 
 \subsection{Strategic Decarbonization Levers}
 \begin{enumerate}

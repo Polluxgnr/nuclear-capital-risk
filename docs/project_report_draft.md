@@ -57,6 +57,18 @@ $$\mathrm{Age}_{2026} = 2026 - \mathrm{Start\ Year}$$
 
 Without systematic 10- to 20-year Long-Term Operation licenses (supported by capital refurbishment programs such as EDF's *Grand Carénage* or the US NRC *Subsequent License Renewal - SLRA*), 181 GW of dispatchable zero-carbon generation will be forced offline by 2035, necessitating replacement by either high-emission fossil peakers or capital-intensive new builds.
 
+### 2.3 The Geospatial Impact Shockwave (Figure 5)
+A single snapshot fails to communicate the macro shockwave of fleet retirement. We developed a 1x2 comparative visual (**Figure 5: `outputs/figures/fig5_global_cliff_map.png`**):
+* **Panel A (2026 Baseline):** Maps all 424 operational reactors, illustrating the dense grid inertia supporting North America, Europe, and Asia.
+* **Panel B (2035 Without LTO):** Visually 'turns off' the 198 mature units, exposing a geographic 'nuclear desert' where mature economies lose 44.4% of their firm clean capacity.
+
+### 2.4 The Carbon Opportunity Cost Benchmark
+If the 181 GW cliff fleet retires, power grids must maintain spinning frequency and dispatchable reserves. In modern wholesale markets, this replacement energy is provided by **Natural Gas Combined Cycle (CCGT)** turbines emitting $400\ \text{gCO}_2/\text{kWh}$ at an $88\%$ capacity factor:
+
+$$\text{Avoided Emissions} = 180.99\ \text{GW} \times 8,760\ \text{h} \times 0.88 \times 0.400\ \text{t/MWh} = \mathbf{558.07\ \text{Mt CO}_2\text{ / year}}$$
+
+This single decision represents **558 Million metric tons of avoided carbon annually**—equivalent to removing **121.3 Million internal combustion passenger cars** from the road, surpassing the combined annual greenhouse gas emissions of France and Belgium.
+
 ### 2.3 Empirical Lead-Time Distribution
 We calculated empirical construction durations:
 

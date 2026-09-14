@@ -109,23 +109,33 @@ streamlit run app.py
 
 ---
 
-## 5. Quantitative Methodology & Key Equations
+## 5. Methodology & Key Assumptions Justification
 
-### S-Curve Expenditure Profile
-Annual capital disbursement follows a continuous Beta cumulative distribution:
-$$S(\tau) = I_\tau(\alpha, \beta) = \frac{1}{\mathrm{B}(\alpha, \beta)} \int_0^\tau u^{\alpha-1} (1-u)^{\beta-1} \mathrm{d}u, \quad \tau = \frac{t}{T} \in [0, 1]$$
-where $\alpha = 2.5, \beta = 2.5$, modeling engineering acceleration and testing taper.
+To ensure institutional academic rigor, our modeling parameters are anchored in empirical industry benchmarks:
 
-### Interest During Construction (IDC) Compounding
-For construction duration $T = T_0 + \Delta t$ and WACC $r$, disbursements $C_t = w_t \cdot \mathrm{Capex}_{\mathrm{overnight}}$ compound via:
-$$\mathrm{Capex}_{\mathrm{total}}(T, r) = \sum_{t=1}^{T} C_t \cdot (1 + r)^{T - t + 0.5}$$
-$$\mathrm{IDC} = \mathrm{Capex}_{\mathrm{total}} - \mathrm{Capex}_{\mathrm{overnight}}, \quad \mathrm{IDC\ Multiplier} = \frac{\mathrm{Capex}_{\mathrm{total}}}{\mathrm{Capex}_{\mathrm{overnight}}}$$
+### A. Carbon Opportunity Cost Logic (CCGT Replacement)
+* **The Rationale:** Nuclear power provides non-intermittent, spinning grid inertia. If the 181.0 GW mature fleet retires without LTO, grid reliability operators cannot balance loads exclusively with variable solar or wind without gigawatt-scale multi-day storage.
+* **The Benchmark:** In modern power markets (e.g. California post-San Onofre, Germany post-Atomausstieg), retired nuclear generation is empirically replaced by **Natural Gas Combined Cycle (CCGT)** turbines emitting **$400\ \mathrm{gCO_2/kWh}$** at an **$88\%$ baseload capacity factor**.
+* **Macro Impact:**
+  $$\text{Avoided Emissions} = 180.99\ \text{GW} \times 8,760\ \text{h} \times 0.88 \times 0.400\ \text{t/MWh} = \mathbf{558.07\ \text{Mt CO}_2\text{ / year}}$$
+  This is equivalent to adding **121.3 Million passenger vehicles** to the road annually, exceeding the combined national annual emissions of France and Belgium.
 
-### Levelized Cost of Electricity (LCOE)
-$$\mathrm{LCOE} = \frac{\mathrm{CRF}(r, N) \cdot \mathrm{Capex}_{\mathrm{total}} + \mathrm{Fixed\ O\&M}}{8760 \cdot \mathrm{CF}} + \mathrm{Var\ O\&M} + \mathrm{Fuel\ Cost}$$
-$$\mathrm{CRF}(r, N) = \frac{r(1+r)^N}{(1+r)^N - 1}$$
-* $N = 20$ years for LTO; $N = 60$ years for Gen-III+; $N = 40$ years for SMR.
-* $\mathrm{CF} = 0.88$ (88% baseload capacity factor).
+### B. Beta(2.5, 2.5) S-Curve Spend Distribution
+* **The Rationale:** Civil engineering megaprojects exhibit a bell-shaped spending profile:
+  1. *Early Phase (5–10%/yr):* Preliminary site preparation, seismic geotechnical surveying, and regulatory licensing.
+  2. *Peak Phase (25–30%/yr):* Heavy structural concrete pouring, nuclear containment erection, and Nuclear Steam Supply System (NSSS) installation.
+  3. *Taper Phase (10–15%/yr):* Instrumentation and Control (I&C) cabling, cold/hot functional hydro-testing, and initial core fuel loading.
+* **The Math:** Modeled via the regularized incomplete Beta cumulative distribution function $S(\tau) = I_\tau(2.5, 2.5)$ over normalized construction time $\tau = t / T$.
+
+### C. Mid-Year Compounding Convention $(T - t + 0.5)$
+* In nuclear project finance, capital expenditures are drawn down in progressive monthly installments throughout each calendar year. Assuming a mid-year disbursement date means debt incurred in year $t$ accrues interest for exactly $(T - t + 0.5)$ years until commercial operation, avoiding the underestimation of carrying costs.
+
+### D. Cost of Capital (WACC) Benchmarks (Damodaran NYU Stern)
+* Sourced from Prof. Aswath Damodaran's 2026 sector tables for *Green & Power Utilities*:
+  * **Subsidized / Green Bonds ($4.0\%$):** Sovereign-backed low-cost financing.
+  * **Developed Utilities ($5.5\%$):** Regulated investor-owned utilities in the US and Western Europe.
+  * **Baseline Market ($7.0\%$):** Unhedged commercial power utility financing.
+  * **Emerging Markets ($8.5\%–10.0\%$):** Higher country risk premiums and sovereign credit spreads (e.g. Brazil, India).
 
 ---
 

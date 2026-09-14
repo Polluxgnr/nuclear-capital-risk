@@ -2,6 +2,11 @@
 
 ESSEC / AIDAMS - Research & Emerging Topics in Data Science: Climate Risks (Fall 2026)
 Course Project: Nuclear Project Finance & Fleet Life Extension (LTO)
+
+This module handles the ingestion, cleaning, feature engineering, and statistical
+validation of global nuclear power assets from the Global Energy Monitor (GEM) tracker.
+It is decomposed into single-purpose functions with extensive educational comments
+designed for clear academic understanding.
 """
 
 from __future__ import annotations
@@ -20,6 +25,13 @@ logger = logging.getLogger(__name__)
 def parse_flexible_date(val: Any) -> pd.Timestamp:
     """Parse irregular date strings (YYYY, YYYY-MM, YYYY-MM-DD) into pandas Timestamp.
 
+    Why this helper is needed:
+    Real-world historical energy datasets from international registries often mix
+    precise dates ('1974-06-24') with approximate dates ('1974-06') or year-only
+    estimates ('1974' or '1974.0') for older units or announced projects.
+    To avoid discarding hundreds of valid reactors, we standardize year-only
+    entries to mid-year (July 1st) and year-month entries to mid-month (15th).
+
     Parameters
     ----------
     val : Any
@@ -28,7 +40,7 @@ def parse_flexible_date(val: Any) -> pd.Timestamp:
     Returns
     -------
     pd.Timestamp
-        Parsed Timestamp or pd.NaT if invalid or missing.
+        Standardized pandas Timestamp or pd.NaT if invalid or missing.
     """
     if pd.isna(val):
         return pd.NaT
@@ -40,42 +52,40 @@ def parse_flexible_date(val: Any) -> pd.Timestamp:
     if not s or s.lower() in ("nan", "nat", "none", ""):
         return pd.NaT
 
-    # Format: YYYY (e.g., '1984' or '1984.0')
+    # Strip floating point string representations like '1984.0'
     if s.endswith(".0"):
         s = s[:-2]
 
+    # Case 1: Year-only (e.g., '1984') -> set to mid-year (July 1st)
     if len(s) == 4 and s.isdigit():
         return pd.to_datetime(f"{s}-07-01", errors="coerce")
 
-    # Format: YYYY-MM
+    # Case 2: Year-Month (e.g., '1984-06') -> set to mid-month (15th)
     if len(s) == 7 and s[:4].isdigit() and s[4] == "-":
         return pd.to_datetime(f"{s}-15", errors="coerce")
 
-    # Standard YYYY-MM-DD or standard parseable string
+    # Case 3: Standard ISO date ('YYYY-MM-DD') or standard parseable string
     return pd.to_datetime(s, errors="coerce")
 
 
 def clean_status_category(raw_status: Any) -> str:
-    """Standardize raw status strings into analytical categories.
+    """Standardize raw operational status strings into clean analytical categories.
 
-    Categories:
-    - 'operating'
-    - 'construction'
-    - 'cancelled'
-    - 'pre-construction'
-    - 'announced'
-    - 'retired'
-    - 'shelved'
+    Why this helper is needed:
+    The raw dataset contains nuanced operational labels like 'cancelled - inferred 4 y'
+    or 'shelved - inferred 2 y'. For rigorous statistical aggregation, we collapse
+    these into 7 mutually exclusive industry-standard categories.
 
     Parameters
     ----------
     raw_status : Any
-        Raw status string.
+        Raw status string from the GEM tracker.
 
     Returns
     -------
     str
-        Standardized status string.
+        Standardized status string ('operating', 'construction', 'cancelled',
+        'pre-construction', 'announced', 'retired', 'shelved', or 'unknown').
     """
     if pd.isna(raw_status):
         return "unknown"
@@ -99,28 +109,25 @@ def clean_status_category(raw_status: Any) -> str:
 
 
 def clean_reactor_type(raw_type: Any) -> str:
-    """Standardize reactor technologies into recognized industry classifications.
+    """Standardize diverse reactor technologies into standard engineering classes.
 
-    Categories:
-    - 'PWR' (Pressurized Water Reactor)
-    - 'BWR' (Boiling Water Reactor)
-    - 'SMR' (Small Modular Reactor)
-    - 'PHWR' (Pressurized Heavy Water Reactor / CANDU)
-    - 'FBR' (Fast Breeder / Liquid Metal)
-    - 'HTGR' (High Temperature Gas Reactor)
-    - 'LWGR' (Light Water Graphite / RBMK)
-    - 'GCR' (Gas-Cooled Reactor)
-    - 'Other'
+    Why this helper is needed:
+    Nuclear engineering uses various cooling and moderation mechanisms.
+    Pressurized Water Reactors (PWR) represent the vast majority of Western fleets,
+    while Boiling Water Reactors (BWR) and Heavy Water (CANDU/PHWR) follow distinct
+    refurbishment and component replacement cycles. Small Modular Reactors (SMR)
+    represent the emerging Gen-IV/modular paradigm.
 
     Parameters
     ----------
     raw_type : Any
-        Raw reactor type description.
+        Raw descriptive reactor technology string.
 
     Returns
     -------
     str
-        Standardized reactor type.
+        Clean classification code ('PWR', 'BWR', 'SMR', 'PHWR', 'FBR',
+        'HTGR', 'LWGR', 'GCR', or 'Other').
     """
     if pd.isna(raw_type):
         return "Unknown"
@@ -145,26 +152,159 @@ def clean_reactor_type(raw_type: Any) -> str:
     return "Other"
 
 
+def calculate_construction_lead_times(df: pd.DataFrame) -> pd.Series:
+    """Calculate empirical construction duration in fractional years.
+
+    Why this helper is needed:
+    Construction lead time (COD - Construction Start Date) is the primary driver
+    of Interest During Construction (IDC). We calculate duration in exact days
+    divided by 365.25 to account for leap years, with a fallback to year-level
+    differences when day-level timestamps are unavailable.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing cleaned date and year columns.
+
+    Returns
+    -------
+    pd.Series
+        Lead time in fractional years (NaN for uncompleted or unbuilt units).
+    """
+    # 1. High-precision calculation based on exact parsed dates
+    exact_lead_time = (df["COD_Clean"] - df["Const_Start_Date_Clean"]).dt.days / 365.25
+
+    # 2. Fallback to integer year difference where exact dates are missing
+    fallback_mask = exact_lead_time.isna() & df["COD_Year"].notna() & df["Const_Start_Year"].notna()
+    lead_time = exact_lead_time.copy()
+    lead_time.loc[fallback_mask] = df.loc[fallback_mask, "COD_Year"] - df.loc[fallback_mask, "Const_Start_Year"]
+
+    # 3. Filter out anomalous negative durations (data entry errors in tracker)
+    lead_time.loc[lead_time < 0] = np.nan
+    return lead_time
+
+
+def calculate_fleet_age_and_cliff(
+    df: pd.DataFrame,
+    reference_year: int = 2026,
+    cliff_threshold_years: int = 40,
+) -> Tuple[pd.Series, pd.Series]:
+    """Compute operating reactor age and identify the 40+ year 'Cliff Edge' cohort.
+
+    Why the 40-year threshold matters in Nuclear Project Finance:
+    In the United States, France, and Japan, initial commercial licenses were granted
+    for 40 years based on financial debt amortization horizons and antitrust rules,
+    rather than physical metallurgic limitations.
+    When a unit reaches 40 years, utilities face a mandatory binary choice:
+    1. Decommission the plant (incurring $500M+ in retirement costs and losing baseload cash flow), OR
+    2. Execute Long-Term Operation (LTO / Grand Carénage) to extend life to 60 or 80 years.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Cleaned DataFrame.
+    reference_year : int, default 2026
+        Evaluation baseline year.
+    cliff_threshold_years : int, default 40
+        Design lifetime limit flagging units at risk of mandatory shutdown.
+
+    Returns
+    -------
+    Tuple[pd.Series, pd.Series]
+        (Age_2026, Cliff_Edge_40plus boolean series).
+    """
+    age_series = pd.Series(index=df.index, dtype=float)
+    operating_mask = df["Clean_Status"] == "operating"
+
+    # Age is strictly calculated for actively operating units
+    age_series.loc[operating_mask] = reference_year - df.loc[operating_mask, "Start_Year_Clean"]
+
+    # Binary cliff edge flag: operating and age >= 40
+    cliff_edge_flag = operating_mask & (age_series >= cliff_threshold_years)
+    return age_series, cliff_edge_flag
+
+
+def calculate_avoided_carbon_emissions(
+    cliff_capacity_gw: float,
+    ccgt_emission_factor_g_kwh: float = 400.0,
+    capacity_factor: float = 0.88,
+    car_annual_emissions_metric_tons: float = 4.6,
+) -> Dict[str, float]:
+    """Calculate the Carbon Opportunity Cost of retiring the 40+ year nuclear fleet.
+
+    The Climate Risk Logic:
+    Nuclear power provides dispatchable, weather-independent, spinning baseload.
+    If 181 GW of nuclear capacity is retired, power grid operators cannot replace
+    it solely with non-dispatchable solar or wind without massive unbuilt storage.
+    Empirically (as observed in Germany post-Atomausstieg and California post-San Onofre),
+    retiring nuclear baseload is directly replaced by dispatchable Natural Gas
+    Combined Cycle (CCGT) turbines.
+
+    Parameters
+    ----------
+    cliff_capacity_gw : float
+        Total capacity of operating reactors >= 40 years old (approx. 181 GW).
+    ccgt_emission_factor_g_kwh : float, default 400.0
+        Lifecycle carbon intensity of modern CCGT natural gas in gCO2 / kWh.
+    capacity_factor : float, default 0.88
+        Nuclear baseload annual availability factor (88%).
+    car_annual_emissions_metric_tons : float, default 4.6
+        Average annual CO2 emissions of a typical passenger gasoline vehicle (EPA benchmark).
+
+    Returns
+    -------
+    Dict[str, float]
+        Dictionary with annual generation (TWh), avoided CO2 (Mt/yr), and car equivalents (Millions).
+    """
+    # 1. Total electricity that would need replacement (kWh and TWh)
+    annual_generation_kwh = cliff_capacity_gw * 1e6 * 8760.0 * capacity_factor
+    annual_generation_twh = annual_generation_kwh / 1e9
+
+    # 2. Avoided CO2 emissions in Metric Tons and Million Metric Tons (Mt)
+    # (kWh * gCO2/kWh) / 1e6 g per ton = metric tons
+    annual_avoided_co2_metric_tons = (annual_generation_kwh * ccgt_emission_factor_g_kwh) / 1e6
+    annual_avoided_co2_mt = annual_avoided_co2_metric_tons / 1e6
+
+    # 3. Relatable macro benchmark: Equivalent passenger cars removed from the road
+    equivalent_cars_millions = (annual_avoided_co2_metric_tons / car_annual_emissions_metric_tons) / 1e6
+
+    return {
+        "annual_generation_twh": float(round(annual_generation_twh, 2)),
+        "annual_avoided_co2_mt": float(round(annual_avoided_co2_mt, 2)),
+        "equivalent_cars_millions": float(round(equivalent_cars_millions, 1)),
+        "ccgt_emission_factor_g_kwh": float(ccgt_emission_factor_g_kwh),
+    }
+
+
 def process_nuclear_data(
     raw_file_path: Optional[Union[str, Path]] = None,
     output_file_path: Optional[Union[str, Path]] = None,
     reference_year: int = 2026,
 ) -> Tuple[pd.DataFrame, Dict[str, Any]]:
-    """Ingest, clean, and enrich the Global Nuclear Power Tracker dataset.
+    """Ingest, clean, enrich, and validate the Global Nuclear Power Tracker dataset.
+
+    Execution Pipeline
+    ------------------
+    1. Ingest sheet 'Data' from raw Excel tracker.
+    2. Clean text fields and standardize classifications (Status, Reactor Type).
+    3. Parse flexible timestamps and compute empirical construction lead times.
+    4. Compute asset age as of reference year and identify the 40+ year cliff edge.
+    5. Calculate the Carbon Opportunity Cost (avoided emissions vs. CCGT replacement).
+    6. Export clean tabular dataset and executive summary table to disk.
 
     Parameters
     ----------
     raw_file_path : Union[str, Path], optional
-        Path to raw Excel file. Defaults to `data/raw/Global-Nuclear-Power-Tracker-August-2026.xlsx`.
+        Path to raw Excel file.
     output_file_path : Union[str, Path], optional
-        Path to output CSV file. Defaults to `data/processed/clean_nuclear_fleet.csv`.
+        Path to processed CSV file.
     reference_year : int, default 2026
-        Reference evaluation year for age and cliff edge assessment.
+        Reference evaluation year.
 
     Returns
     -------
     Tuple[pd.DataFrame, Dict[str, Any]]
-        Cleaned DataFrame and summary metrics dictionary.
+        Cleaned fleet DataFrame and summary metrics dictionary.
     """
     project_root = Path(__file__).resolve().parent.parent
 
@@ -179,99 +319,70 @@ def process_nuclear_data(
         output_file_path = Path(output_file_path)
 
     if not raw_file_path.exists():
-        raise FileNotFoundError(f"Raw data file not found at: {raw_file_path}")
+        raise FileNotFoundError(f"Raw dataset not found at: {raw_file_path}")
 
-    logger.info(f"Ingesting raw data from: {raw_file_path} (Sheet: 'Data')")
+    logger.info(f"Ingesting raw tracker from: {raw_file_path} (Sheet: 'Data')")
     df = pd.read_excel(raw_file_path, sheet_name="Data")
     logger.info(f"Loaded {len(df)} initial reactor units across {len(df.columns)} features.")
 
-    # 1. Standardize text columns
-    df["Project Name"] = df["Project Name"].astype(str).str.strip()
-    df["Unit Name"] = df["Unit Name"].astype(str).str.strip()
-    df["Country/Area"] = df["Country/Area"].astype(str).str.strip()
-    df["Region"] = df["Region"].astype(str).str.strip()
-    df["Subregion"] = df["Subregion"].astype(str).str.strip()
+    # 1. Standardize string attributes
+    for col in ["Project Name", "Unit Name", "Country/Area", "Region", "Subregion"]:
+        if col in df.columns:
+            df[col] = df[col].astype(str).str.strip()
 
-    # 2. Clean status and reactor classifications
+    # 2. Standardize categorical classifications
     df["Clean_Status"] = df["Status"].apply(clean_status_category)
     df["Reactor_Type_Clean"] = df["Reactor Type"].apply(clean_reactor_type)
 
-    # 3. Clean and parse dates
-    logger.info("Parsing dates (Construction Start, Commercial Operation, Start Year, Cancellation Year)...")
+    # 3. Clean and parse date fields
+    logger.info("Parsing flexible timestamps (Construction Start Date, COD, Start Year)...")
     df["Const_Start_Date_Clean"] = df["Construction Start Date"].apply(parse_flexible_date)
     df["COD_Clean"] = df["Commercial Operation Date"].apply(parse_flexible_date)
 
-    # Clean numeric years
     df["Start_Year_Clean"] = pd.to_numeric(df["Start Year"], errors="coerce")
     df["Cancellation_Year_Clean"] = pd.to_numeric(df["Cancellation Year"], errors="coerce")
     df["Retirement_Year_Clean"] = pd.to_numeric(df["Retirement Year"], errors="coerce")
 
-    # If COD is missing but Start Year exists, approximate COD
-    missing_cod_mask = df["COD_Clean"].isna() & df["Start_Year_Clean"].notna()
-    df.loc[missing_cod_mask, "COD_Clean"] = pd.to_datetime(
-        df.loc[missing_cod_mask, "Start_Year_Clean"].astype(int).astype(str) + "-07-01",
+    # If COD is missing but Start Year exists, approximate COD to mid-year
+    missing_cod = df["COD_Clean"].isna() & df["Start_Year_Clean"].notna()
+    df.loc[missing_cod, "COD_Clean"] = pd.to_datetime(
+        df.loc[missing_cod, "Start_Year_Clean"].astype(int).astype(str) + "-07-01",
         errors="coerce",
     )
 
-    # If Const Start Date is missing but Construction Start Date has year
     df["Const_Start_Year"] = df["Const_Start_Date_Clean"].dt.year
     df["COD_Year"] = df["COD_Clean"].dt.year.fillna(df["Start_Year_Clean"])
 
-    # 4. Calculate Construction Lead Time in years (COD - Const Start)
-    # Precise days difference divided by 365.25
-    df["Construction_Lead_Time_Years"] = (
-        (df["COD_Clean"] - df["Const_Start_Date_Clean"]).dt.days / 365.25
-    )
+    # 4. Compute empirical lead times in fractional years
+    df["Construction_Lead_Time_Years"] = calculate_construction_lead_times(df)
 
-    # Fallback to year difference if exact dates are missing but years are known
-    fallback_lead_mask = (
-        df["Construction_Lead_Time_Years"].isna()
-        & df["COD_Year"].notna()
-        & df["Const_Start_Year"].notna()
-    )
-    df.loc[fallback_lead_mask, "Construction_Lead_Time_Years"] = (
-        df.loc[fallback_lead_mask, "COD_Year"] - df.loc[fallback_lead_mask, "Const_Start_Year"]
-    )
+    # 5. Compute age and identify 40+ cliff edge fleet
+    df["Age_2026"], df["Cliff_Edge_40plus"] = calculate_fleet_age_and_cliff(df, reference_year=reference_year)
 
-    # Filter out anomalous negative lead times if any
-    df.loc[df["Construction_Lead_Time_Years"] < 0, "Construction_Lead_Time_Years"] = np.nan
-
-    # 5. Calculate Fleet Age and Cliff Edge Flag for Operating Fleet
-    df["Age_2026"] = np.nan
-    operating_mask = df["Clean_Status"] == "operating"
-    df.loc[operating_mask, "Age_2026"] = reference_year - df.loc[operating_mask, "Start_Year_Clean"]
-
-    # Binary Cliff Edge Flag: Operating unit age >= 40 years
-    df["Cliff_Edge_40plus"] = False
-    df.loc[operating_mask & (df["Age_2026"] >= 40), "Cliff_Edge_40plus"] = True
-
-    # Capacity in MW
+    # Convert capacity to numeric
     df["Capacity (MW)"] = pd.to_numeric(df["Capacity (MW)"], errors="coerce").fillna(0.0)
     df["Capacity_GW"] = df["Capacity (MW)"] / 1000.0
 
-    # 6. Carbon Opportunity Cost & Summary Validation Metrics
-    operating_units = df[operating_mask]
+    # 6. Statistical Aggregations & Carbon Opportunity Cost
+    operating_units = df[df["Clean_Status"] == "operating"]
     cliff_units = df[df["Cliff_Edge_40plus"]]
-    total_operating_capacity_gw = operating_units["Capacity_GW"].sum()
-    cliff_capacity_gw = cliff_units["Capacity_GW"].sum()
-    cliff_pct = (cliff_capacity_gw / total_operating_capacity_gw) * 100 if total_operating_capacity_gw > 0 else 0
 
-    # Avoided CO2 emissions: replacing cliff fleet with Natural Gas CCGT (400 gCO2/kWh, 88% CF)
-    # Annual Generation (kWh) = Capacity_GW * 1e6 kW * 8760 h * 0.88 CF
-    # Avoided CO2 (Mt) = Generation * 400 g / 1e12 g per Mt
-    annual_generation_cliff_kwh = cliff_capacity_gw * 1e6 * 8760 * 0.88
-    avoided_co2_mt_per_year = (annual_generation_cliff_kwh * 400.0) / 1e12
+    total_op_gw = operating_units["Capacity_GW"].sum()
+    cliff_gw = cliff_units["Capacity_GW"].sum()
+    cliff_pct = (cliff_gw / total_op_gw) * 100.0 if total_op_gw > 0 else 0.0
 
+    carbon_metrics = calculate_avoided_carbon_emissions(cliff_gw)
     valid_lead_times = operating_units["Construction_Lead_Time_Years"].dropna()
 
     summary_metrics = {
         "total_records": len(df),
         "operating_reactors": len(operating_units),
-        "total_operating_capacity_gw": float(round(total_operating_capacity_gw, 2)),
+        "total_operating_capacity_gw": float(round(total_op_gw, 2)),
         "cliff_edge_reactors_40plus": len(cliff_units),
-        "cliff_edge_capacity_gw": float(round(cliff_capacity_gw, 2)),
+        "cliff_edge_capacity_gw": float(round(cliff_gw, 2)),
         "cliff_edge_pct_of_operating": float(round(cliff_pct, 2)),
-        "cliff_edge_avoided_co2_mt_per_year": float(round(avoided_co2_mt_per_year, 2)),
+        "cliff_edge_avoided_co2_mt_per_year": carbon_metrics["annual_avoided_co2_mt"],
+        "cliff_edge_equivalent_cars_millions": carbon_metrics["equivalent_cars_millions"],
         "mean_operating_lead_time_years": float(round(valid_lead_times.mean(), 2)),
         "median_operating_lead_time_years": float(round(valid_lead_times.median(), 2)),
         "under_construction_reactors": int((df["Clean_Status"] == "construction").sum()),
@@ -279,21 +390,20 @@ def process_nuclear_data(
         "cancelled_reactors": int((df["Clean_Status"] == "cancelled").sum()),
     }
 
-    logger.info("=== Dataset Ingestion & Validation Summary ===")
+    logger.info("=== Fleet Data Ingestion & Statistical Validation ===")
     for k, v in summary_metrics.items():
         logger.info(f"  {k}: {v}")
 
-    # Export Executive Summary Metrics Table
-    exec_summary_df = pd.DataFrame([summary_metrics])
-    exec_summary_path = project_root / "outputs" / "tables" / "executive_metrics_summary.csv"
-    exec_summary_path.parent.mkdir(parents=True, exist_ok=True)
-    exec_summary_df.to_csv(exec_summary_path, index=False)
-    logger.info(f"Executive metrics summary saved to: {exec_summary_path}")
-
-    # 7. Export Processed Data
+    # 7. Save outputs
     output_file_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(output_file_path, index=False, encoding="utf-8")
-    logger.info(f"Cleaned dataset successfully saved to: {output_file_path}")
+    logger.info(f"Clean fleet data saved to: {output_file_path}")
+
+    # Save executive metrics table
+    exec_table_path = project_root / "outputs" / "tables" / "executive_metrics_summary.csv"
+    exec_table_path.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame([summary_metrics]).to_csv(exec_table_path, index=False)
+    logger.info(f"Executive metrics table saved to: {exec_table_path}")
 
     return df, summary_metrics
 
