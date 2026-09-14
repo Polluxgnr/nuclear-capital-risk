@@ -69,26 +69,24 @@ nuclear-capital-risk/
 
 ---
 
-## 4. Setup & Reproducibility Guide
+## 3. Setup & Reproducibility Guide
 
 ### Option A: Using Pixi (Recommended)
 Pixi provides reproducible, multi-platform dependency isolation directly from `pixi.toml`:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/<your-username>/nuclear-capital-risk.git
+git clone https://github.com/Polluxgnr/nuclear-capital-risk.git
 cd nuclear-capital-risk
 
 # 2. Install dependencies into isolated environment
 pixi install
 
-# 3. Run the complete pipeline
+# 3. Run the complete quantitative pipeline
 pixi run python main.py
 
-# Alternatively, execute pre-configured pixi tasks:
-pixi run process    # Clean raw fleet data
-pixi run model      # Compute IDC and LCOE tables
-pixi run visualize  # Generate 300 DPI figures
+# 4. Launch the Interactive Streamlit Defense Dashboard
+pixi run dashboard
 ```
 
 ### Option B: Using Standard Python (pip / venv)
@@ -101,10 +99,12 @@ source .venv/bin/activate       # On Linux/macOS
 # or: .venv\Scripts\activate    # On Windows PowerShell
 
 # 2. Install requirements
-pip install pandas numpy openpyxl matplotlib seaborn scipy
+pip install -r pyproject.toml
+# or: pip install pandas numpy openpyxl matplotlib seaborn scipy streamlit geopandas
 
-# 3. Execute the pipeline
+# 3. Execute the pipeline & launch dashboard
 python main.py
+streamlit run app.py
 ```
 
 ---
@@ -137,6 +137,7 @@ $$\mathrm{CRF}(r, N) = \frac{r(1+r)^N}{(1+r)^N - 1}$$
 | **Figure 2** | 2026 Global Nuclear Age Pyramid highlighting the **181 GW (198 reactors)** 40+ year cliff. | `outputs/figures/fig2_nuclear_age_pyramid_cliff.png` |
 | **Figure 3** | Debt escalation & IDC compounding curve over delays ($\Delta t \in [0, 10]$ yrs) across WACCs. | `outputs/figures/fig3_idc_compounding_escalation.png` |
 | **Figure 4** | LCOE comparison between 20-yr LTO, on-time Gen-III+, delayed Gen-III+, and SMRs. | `outputs/figures/fig4_lcoe_comparison_lto_vs_newbuild.png` |
+| **Figure 5** | Global geospatial distribution of operating reactors highlighting the 40+ year cliff. | `outputs/figures/fig5_global_cliff_map.png` |
 
 ---
 

@@ -466,12 +466,112 @@ def plot_figure_4_lcoe_comparison(
     logger.info(f"Figure 4 saved to: {output_path}")
 
 
+def plot_fig5_geospatial_cliff(
+    df: pd.DataFrame,
+    output_path: Path,
+) -> None:
+    """Figure 5: Global Geospatial Map of the 40+ Year Nuclear Operational Cliff.
+
+    Plots operating reactors < 40 years as blue dots and >= 40 years as bright red bubbles.
+    """
+    logger.info("Generating Figure 5: Global Geospatial Cliff Map...")
+
+    op_df = df[df["Clean_Status"] == "operating"].copy()
+    op_df["Latitude"] = pd.to_numeric(op_df["Latitude"], errors="coerce")
+    op_df["Longitude"] = pd.to_numeric(op_df["Longitude"], errors="coerce")
+    valid_coords = op_df[op_df["Latitude"].notna() & op_df["Longitude"].notna()].copy()
+
+    fig, ax = plt.subplots(figsize=(15, 8.5))
+
+    # Try loading world landmass from data/raw/world.json using geopandas
+    project_root = Path(__file__).resolve().parent.parent
+    world_json_path = project_root / "data" / "raw" / "world.json"
+
+    world_loaded = False
+    if world_json_path.exists():
+        try:
+            import geopandas as gpd
+            world = gpd.read_file(world_json_path)
+            world.plot(ax=ax, color="#e8ecf0", edgecolor="#c4cdd5", linewidth=0.6)
+            world_loaded = True
+        except Exception as e:
+            logger.warning(f"Could not plot world map via geopandas: {e}")
+
+    if not world_loaded:
+        # Fallback background
+        ax.set_facecolor("#f4f7f9")
+
+    # Split into regular operating vs cliff edge (>= 40 years)
+    regular_fleet = valid_coords[~valid_coords["Cliff_Edge_40plus"]]
+    cliff_fleet = valid_coords[valid_coords["Cliff_Edge_40plus"]]
+
+    # 1. Plot Operating Fleet < 40 years (Blue dots)
+    ax.scatter(
+        regular_fleet["Longitude"],
+        regular_fleet["Latitude"],
+        c="#2b5c8f",
+        s=30,
+        alpha=0.65,
+        edgecolors="none",
+        label=f"Operating Fleet < 40 Years ({len(regular_fleet)} units, {regular_fleet['Capacity_GW'].sum():.1f} GW)",
+        zorder=3,
+    )
+
+    # 2. Plot Cliff Edge Fleet >= 40 years (Bright red bubbles)
+    ax.scatter(
+        cliff_fleet["Longitude"],
+        cliff_fleet["Latitude"],
+        c="#d73027",
+        s=75,
+        alpha=0.85,
+        edgecolors="#7f0000",
+        linewidths=0.9,
+        label=f"Cliff Edge Fleet \u2265 40 Years ({len(cliff_fleet)} units, {cliff_fleet['Capacity_GW'].sum():.1f} GW)",
+        zorder=4,
+    )
+
+    # Styling and Map Limits
+    ax.set_xlim(-130, 155)
+    ax.set_ylim(-45, 72)
+    ax.set_title(
+        "Figure 5: Global Distribution of Nuclear Assets & The Impending 40+ Year Operational Cliff",
+        fontweight="bold", pad=16, fontsize=14,
+    )
+    ax.set_xlabel("Longitude", labelpad=8, fontweight="bold")
+    ax.set_ylabel("Latitude", labelpad=8, fontweight="bold")
+    ax.grid(True, linestyle=":", alpha=0.5, color="#b0bec5")
+
+    # Summary Callout Banner
+    avoided_co2 = (cliff_fleet["Capacity_GW"].sum() * 1e6 * 8760 * 0.88 * 400.0) / 1e12
+    ax.text(
+        0.02, 0.04,
+        f"GLOBAL CLIFF SUMMARY (August 2026 Tracker):\n"
+        f"\u2022 Total Operating Fleet: {len(valid_coords)} units ({valid_coords['Capacity_GW'].sum():.1f} GW)\n"
+        f"\u2022 Cliff Fleet (\u2265 40 Years): {len(cliff_fleet)} units ({cliff_fleet['Capacity_GW'].sum():.1f} GW, 44.4% of fleet)\n"
+        f"\u2022 Avoided CO2 Emissions: {avoided_co2:.1f} Million Metric Tons / Year (vs. CCGT Gas)",
+        transform=ax.transAxes,
+        fontsize=9.5,
+        fontweight="bold",
+        va="bottom",
+        ha="left",
+        bbox=dict(boxstyle="round,pad=0.5", facecolor="#ffffff", edgecolor="#d73027", linewidth=1.2, alpha=0.95),
+        zorder=5,
+    )
+
+    ax.legend(loc="upper left", framealpha=0.95, fontsize=9.5)
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300)
+    plt.close()
+    logger.info(f"Figure 5 saved to: {output_path}")
+
+
 def generate_all_figures(
     data_path: Optional[Union[str, Path]] = None,
     tables_dir: Optional[Union[str, Path]] = None,
     output_dir: Optional[Union[str, Path]] = None,
 ) -> None:
-    """Orchestrate generation and export of all 4 publication-ready figures."""
+    """Orchestrate generation and export of all 5 publication-ready figures."""
     project_root = Path(__file__).resolve().parent.parent
 
     if data_path is None:
@@ -510,13 +610,15 @@ def generate_all_figures(
     fig2_path = output_dir / "fig2_nuclear_age_pyramid_cliff.png"
     fig3_path = output_dir / "fig3_idc_compounding_escalation.png"
     fig4_path = output_dir / "fig4_lcoe_comparison_lto_vs_newbuild.png"
+    fig5_path = output_dir / "fig5_global_cliff_map.png"
 
     plot_figure_1_construction_durations(df, fig1_path)
     plot_figure_2_age_pyramid_cliff(df, fig2_path)
     plot_figure_3_idc_compounding_curve(df_capex, fig3_path)
     plot_figure_4_lcoe_comparison(df_lcoe, fig4_path)
+    plot_fig5_geospatial_cliff(df, fig5_path)
 
-    logger.info("All 4 publication figures generated successfully at 300 DPI.")
+    logger.info("All 5 publication figures generated successfully at 300 DPI.")
 
 
 if __name__ == "__main__":

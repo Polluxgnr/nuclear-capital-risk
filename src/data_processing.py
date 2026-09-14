@@ -249,12 +249,18 @@ def process_nuclear_data(
     df["Capacity (MW)"] = pd.to_numeric(df["Capacity (MW)"], errors="coerce").fillna(0.0)
     df["Capacity_GW"] = df["Capacity (MW)"] / 1000.0
 
-    # 6. Summary Validation Metrics
+    # 6. Carbon Opportunity Cost & Summary Validation Metrics
     operating_units = df[operating_mask]
     cliff_units = df[df["Cliff_Edge_40plus"]]
     total_operating_capacity_gw = operating_units["Capacity_GW"].sum()
     cliff_capacity_gw = cliff_units["Capacity_GW"].sum()
     cliff_pct = (cliff_capacity_gw / total_operating_capacity_gw) * 100 if total_operating_capacity_gw > 0 else 0
+
+    # Avoided CO2 emissions: replacing cliff fleet with Natural Gas CCGT (400 gCO2/kWh, 88% CF)
+    # Annual Generation (kWh) = Capacity_GW * 1e6 kW * 8760 h * 0.88 CF
+    # Avoided CO2 (Mt) = Generation * 400 g / 1e12 g per Mt
+    annual_generation_cliff_kwh = cliff_capacity_gw * 1e6 * 8760 * 0.88
+    avoided_co2_mt_per_year = (annual_generation_cliff_kwh * 400.0) / 1e12
 
     valid_lead_times = operating_units["Construction_Lead_Time_Years"].dropna()
 
@@ -265,6 +271,7 @@ def process_nuclear_data(
         "cliff_edge_reactors_40plus": len(cliff_units),
         "cliff_edge_capacity_gw": float(round(cliff_capacity_gw, 2)),
         "cliff_edge_pct_of_operating": float(round(cliff_pct, 2)),
+        "cliff_edge_avoided_co2_mt_per_year": float(round(avoided_co2_mt_per_year, 2)),
         "mean_operating_lead_time_years": float(round(valid_lead_times.mean(), 2)),
         "median_operating_lead_time_years": float(round(valid_lead_times.median(), 2)),
         "under_construction_reactors": int((df["Clean_Status"] == "construction").sum()),
@@ -275,6 +282,13 @@ def process_nuclear_data(
     logger.info("=== Dataset Ingestion & Validation Summary ===")
     for k, v in summary_metrics.items():
         logger.info(f"  {k}: {v}")
+
+    # Export Executive Summary Metrics Table
+    exec_summary_df = pd.DataFrame([summary_metrics])
+    exec_summary_path = project_root / "outputs" / "tables" / "executive_metrics_summary.csv"
+    exec_summary_path.parent.mkdir(parents=True, exist_ok=True)
+    exec_summary_df.to_csv(exec_summary_path, index=False)
+    logger.info(f"Executive metrics summary saved to: {exec_summary_path}")
 
     # 7. Export Processed Data
     output_file_path.parent.mkdir(parents=True, exist_ok=True)

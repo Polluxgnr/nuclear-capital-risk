@@ -62,6 +62,7 @@ def run_pipeline() -> None:
     print(f"  * Total Tracked Units:        {metrics['total_records']}")
     print(f"  * Operating Fleet Capacity:   {metrics['total_operating_capacity_gw']:.1f} GW ({metrics['operating_reactors']} units)")
     print(f"  * Cliff Edge (>= 40 Years):   {metrics['cliff_edge_capacity_gw']:.1f} GW ({metrics['cliff_edge_reactors_40plus']} units, {metrics['cliff_edge_pct_of_operating']:.1f}% of operating fleet)")
+    print(f"  * Avoided Carbon Cliff (CO2): {metrics['cliff_edge_avoided_co2_mt_per_year']:.1f} Mt CO2 / year (vs. CCGT gas)")
     print(f"  * Empirical Construction Mean: {metrics['mean_operating_lead_time_years']:.2f} years (Median: {metrics['median_operating_lead_time_years']:.2f} years)")
 
     # Phase 2: Quantitative Financial Modeling
@@ -72,6 +73,7 @@ def run_pipeline() -> None:
     print(f"  * Capex sensitivity table saved:      {tables_dir / 'sensitivity_capex_kw.csv'}")
     print(f"  * LCOE sensitivity table saved:       {tables_dir / 'sensitivity_lcoe.csv'}")
     print(f"  * Comparative LTO table saved:        {tables_dir / 'sensitivity_comparative_lto.csv'}")
+    print(f"  * Executive metrics table saved:      {tables_dir / 'executive_metrics_summary.csv'}")
 
     # Phase 3: Publication-Grade Visualizations
     print_header("Phase 3: Generating Publication-Ready Figures (300 DPI)")
@@ -81,11 +83,12 @@ def run_pipeline() -> None:
         tables_dir=tables_dir,
         output_dir=figures_dir,
     )
-    print("[OK] All 4 figures generated successfully at 300 DPI.")
+    print("[OK] All 5 figures generated successfully at 300 DPI.")
     print(f"  * Figure 1: {figures_dir / 'fig1_construction_durations.png'}")
     print(f"  * Figure 2: {figures_dir / 'fig2_nuclear_age_pyramid_cliff.png'}")
     print(f"  * Figure 3: {figures_dir / 'fig3_idc_compounding_escalation.png'}")
     print(f"  * Figure 4: {figures_dir / 'fig4_lcoe_comparison_lto_vs_newbuild.png'}")
+    print(f"  * Figure 5: {figures_dir / 'fig5_global_cliff_map.png'}")
 
     # Phase 4: Executive Findings and Financial Summary
     elapsed = time.time() - start_time
@@ -93,17 +96,19 @@ def run_pipeline() -> None:
 
     df_comp = model_outputs["comparative"]
 
-    print("""
+    print(f"""
 ================================================================================
                     EXECUTIVE RESEARCH FINDINGS SUMMARY
 ================================================================================
 
-1. THE OPERATIONAL 'CLIFF EDGE' (DATA-DRIVEN INSIGHT):
-   • As of August 2026, 181.0 GW of nuclear baseload capacity (198 reactors, 
+1. THE OPERATIONAL 'CLIFF EDGE' & CARBON OPPORTUNITY COST:
+   * As of August 2026, 181.0 GW of nuclear baseload capacity (198 reactors, 
      representing 44.4% of the global operating fleet) has reached or exceeded 
      its initial 40-year design life.
-   • Without Long-Term Operation (LTO / life extension), global decarbonization 
-     targets face an unprecedented baseload supply cliff between 2026 and 2035.
+   * AVOIDED CARBON CLIFF: Retiring this fleet and replacing it with natural gas 
+     (CCGT @ 400 gCO2/kWh, 88% CF) would inject {metrics['cliff_edge_avoided_co2_mt_per_year']:.1f} Million Metric Tons of 
+     CO2 per year into the atmosphere -- surpassing the entire national annual 
+     emissions of France or the United Kingdom.
 
 2. CONSTRUCTION DURATION & EMPIRICAL REALITY:
    • The historical operating fleet experienced a mean construction lead time 

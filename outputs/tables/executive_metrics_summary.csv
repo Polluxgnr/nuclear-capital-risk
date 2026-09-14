@@ -1,0 +1,2 @@
+total_records,operating_reactors,total_operating_capacity_gw,cliff_edge_reactors_40plus,cliff_edge_capacity_gw,cliff_edge_pct_of_operating,cliff_edge_avoided_co2_mt_per_year,mean_operating_lead_time_years,median_operating_lead_time_years,under_construction_reactors,under_construction_capacity_gw,cancelled_reactors
+1825,424,407.8,198,180.99,44.38,558.1,8.76,7.16,85,90.89,535
