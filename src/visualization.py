@@ -638,6 +638,149 @@ def plot_fig5_geospatial_cliff(
 
 
 # =============================================================================
+# FIGURE 6: STRATEGIC DECARBONIZATION PATHWAYS: CAPITAL VS CUMULATIVE EMISSIONS
+# =============================================================================
+
+def plot_figure_6_transition_pathways(
+    output_path: Path,
+    cliff_capacity_gw: float = 180.99,
+    avoided_co2_mt_per_year: float = 558.07,
+) -> None:
+    r"""Figure 6: Strategic Decarbonization Pathways: Capital Outlay vs. Cumulative Emissions (2026–2045).
+
+    Why this chart is the centerpiece for a Sustainability Consultant:
+    Decision-makers often evaluate climate projects purely on headline overnight capex
+    or 2050 net-zero targets, completely ignoring the *timing* of emissions and the
+    capital opportunity cost.
+    By showing a side-by-side comparison:
+    - Panel A (Capital Expenditure): Highlights the \$1.14 Trillion to \$2.08 Trillion
+      capital arbitrage unlocked by extending existing assets at \$1,200/kW.
+    - Panel B (Cumulative Emissions): Demonstrates that if we retire the 181 GW fleet
+      today and wait 12 years for new reactors to be built, grids must burn natural gas
+      in the interim, releasing 6.70 Gigatons of cumulative CO2 into the atmosphere.
+
+    Parameters
+    ----------
+    output_path : Path
+        Target save path.
+    cliff_capacity_gw : float, default 180.99
+        Capacity of the 40+ year cliff fleet in GW.
+    avoided_co2_mt_per_year : float, default 558.07
+        Annual avoided CO2 emissions in Million metric tons.
+    """
+    logger.info("Generating Figure 6: Strategic Decarbonization Pathways (Capital vs. Cumulative CO2)...")
+
+    fig, axes = plt.subplots(1, 2, figsize=(16, 7))
+
+    # -------------------------------------------------------------------------
+    # PANEL A: CAPITAL OUTLAY TO PRESERVE OR REPLACE 181 GW ($ BILLIONS)
+    # -------------------------------------------------------------------------
+    pathways_capex = [
+        ("Pathway 1:\n20-Yr LTO\n($1,200/kW)", cliff_capacity_gw * 1.200, "#2ca02c"),
+        ("Pathway 2:\nOn-Time Gen-III+\n(7y, 5.5% WACC)", cliff_capacity_gw * 8.890, "#2b5c8f"),
+        ("Pathway 3:\nDelayed Gen-III+\n(+5y, 7.0% WACC)", cliff_capacity_gw * 12.713, "#f46d43"),
+        ("Pathway 4:\nSevere Friction\n(+7y, 10.0% WACC)", cliff_capacity_gw * 17.358, "#d73027"),
+    ]
+
+    labels_a = [p[0] for p in pathways_capex]
+    values_a = [p[1] for p in pathways_capex]
+    colors_a = [p[2] for p in pathways_capex]
+
+    bars_a = axes[0].bar(labels_a, values_a, color=colors_a, width=0.55, edgecolor="#1a1a1a", linewidth=0.8)
+
+    for bar in bars_a:
+        height = bar.get_height()
+        axes[0].annotate(
+            f"${height:,.0f} B\n(${height/1000:.2f}T)",
+            xy=(bar.get_x() + bar.get_width() / 2, height),
+            xytext=(0, 6),
+            textcoords="offset points",
+            ha="center", va="bottom",
+            fontsize=9.5, fontweight="bold",
+        )
+
+    axes[0].set_title(
+        "(A) Total Capital Commitment to Preserve or Replace 181 GW ($B)",
+        fontweight="bold", pad=12, fontsize=12,
+    )
+    axes[0].set_ylabel("Total Capitalized Outlay (USD Billion)", fontweight="bold", labelpad=8)
+    axes[0].yaxis.set_major_formatter(ticker.StrMethodFormatter("${x:,.0f} B"))
+    axes[0].set_ylim(0, 3700)
+    axes[0].grid(True, linestyle="--", alpha=0.6, axis="y")
+
+    # Annotate Capital Arbitrage
+    axes[0].annotate(
+        "LTO Capital Arbitrage:\nSaves $1.14T to $2.08T\nvs. New Greenfield Builds",
+        xy=(0, values_a[0]),
+        xytext=(0.8, 2600),
+        arrowprops=dict(facecolor="#2ca02c", shrink=0.08, width=1.5, headwidth=7),
+        fontsize=9.5, fontweight="bold", color="#1b4d1b",
+        bbox=dict(boxstyle="round,pad=0.4", facecolor="#e8f5e9", edgecolor="#2ca02c", alpha=0.95),
+    )
+
+    # -------------------------------------------------------------------------
+    # PANEL B: CUMULATIVE REPLACEMENT EMISSIONS (2026–2045) IN GIGATONS CO2
+    # -------------------------------------------------------------------------
+    # Pathway 1: 20-Yr LTO -> 0 Gt (Clean power preserved continuously)
+    # Pathway 2: Greenfield with 12y Empirical Delay -> 12 years of CCGT gas generation
+    # Pathway 3: Permanent Gas Replacement (20 years of CCGT gas)
+    cum_lto = 0.0
+    cum_greenfield_lag = (avoided_co2_mt_per_year * 12.0) / 1000.0  # Gigatons
+    cum_gas_lockin = (avoided_co2_mt_per_year * 20.0) / 1000.0      # Gigatons
+
+    pathways_co2 = [
+        ("Pathway 1:\n20-Yr LTO\n(Zero Gap)", cum_lto, "#2ca02c"),
+        ("Pathway 2:\nNew Builds Only\n(12y Construction Gap)", cum_greenfield_lag, "#f46d43"),
+        ("Pathway 3:\nPermanent Gas\n(20y Fossil Lock-in)", cum_gas_lockin, "#7f0000"),
+    ]
+
+    labels_b = [p[0] for p in pathways_co2]
+    values_b = [p[1] for p in pathways_co2]
+    colors_b = [p[2] for p in pathways_co2]
+
+    bars_b = axes[1].bar(labels_b, values_b, color=colors_b, width=0.50, edgecolor="#1a1a1a", linewidth=0.8)
+
+    for bar in bars_b:
+        height = bar.get_height()
+        axes[1].annotate(
+            f"{height:.2f} Gt CO2\n({height*1000:,.0f} Mt)",
+            xy=(bar.get_x() + bar.get_width() / 2, max(height, 0.2)),
+            xytext=(0, 6),
+            textcoords="offset points",
+            ha="center", va="bottom",
+            fontsize=9.5, fontweight="bold",
+        )
+
+    axes[1].set_title(
+        "(B) Cumulative Carbon Penalty: Gas Replacement During Lag (Gt CO2)",
+        fontweight="bold", pad=12, fontsize=12,
+    )
+    axes[1].set_ylabel("Cumulative Replacement Emissions (Gigatons CO2)", fontweight="bold", labelpad=8)
+    axes[1].yaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.1f} Gt"))
+    axes[1].set_ylim(0, 14.0)
+    axes[1].grid(True, linestyle="--", alpha=0.6, axis="y")
+
+    # Annotate Emissions Gap
+    axes[1].annotate(
+        "The 'Lead-Time Emissions Trap':\nWaiting 12 years for new reactors\ninjects 6.70 Gt CO2 into the atmosphere!",
+        xy=(1, values_b[1]),
+        xytext=(0.4, 9.5),
+        arrowprops=dict(facecolor="#d73027", shrink=0.08, width=1.5, headwidth=7),
+        fontsize=9.5, fontweight="bold", color="#7f0000",
+        bbox=dict(boxstyle="round,pad=0.4", facecolor="#fee8c8", edgecolor="#b2182b", alpha=0.95),
+    )
+
+    plt.suptitle(
+        "Figure 6: Sustainability Advisory Matrix: Capital Allocation Arbitrage vs. Cumulative Decarbonization Lag (2026–2045)",
+        fontweight="bold", y=1.02, fontsize=13.5,
+    )
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300)
+    plt.close()
+    logger.info(f"Figure 6 saved to: {output_path}")
+
+
+# =============================================================================
 # MASTER ORCHESTRATOR
 # =============================================================================
 
@@ -646,7 +789,7 @@ def generate_all_figures(
     tables_dir: Optional[Union[str, Path]] = None,
     output_dir: Optional[Union[str, Path]] = None,
 ) -> None:
-    """Orchestrate generation and export of all 5 publication-ready figures."""
+    """Orchestrate generation and export of all 6 publication-ready figures."""
     project_root = Path(__file__).resolve().parent.parent
 
     if data_path is None:
@@ -686,15 +829,18 @@ def generate_all_figures(
     fig3_path = output_dir / "fig3_idc_compounding_escalation.png"
     fig4_path = output_dir / "fig4_lcoe_comparison_lto_vs_newbuild.png"
     fig5_path = output_dir / "fig5_global_cliff_map.png"
+    fig6_path = output_dir / "fig6_decarbonization_pathways.png"
 
     plot_figure_1_construction_durations(df, fig1_path)
     plot_figure_2_age_pyramid_cliff(df, fig2_path)
     plot_figure_3_idc_compounding_curve(df_capex, fig3_path)
     plot_figure_4_lcoe_comparison(df_lcoe, fig4_path)
     plot_fig5_geospatial_cliff(df, fig5_path)
+    plot_figure_6_transition_pathways(fig6_path)
 
-    logger.info("All 5 publication figures successfully rendered at 300 DPI.")
+    logger.info("All 6 publication figures successfully rendered at 300 DPI.")
 
 
 if __name__ == "__main__":
     generate_all_figures()
+

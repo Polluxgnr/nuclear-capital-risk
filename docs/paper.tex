@@ -37,7 +37,7 @@
     \textbf{Neel Sabarwhal} \\[0.5em]
     \small ESSEC Business School / AIDAMS --- \textit{MSc in Data Sciences \& Business Analytics} \\
     \small Course: \textit{Research \& Emerging Topics in Data Science: Climate Risks} (Fall 2026) \\
-    \small \textit{Team Roles: Climate Data Scientist $\cdot$ Climate Risk Analyst $\cdot$ Sustainability Consultant}
+    \small \textit{Team Role: Sustainability Strategy Consultants (Clean Energy Transition \& Capital Advisory)}
 }
 \date{September 2026}
 
@@ -65,9 +65,8 @@ Decarbonizing power grids requires firm, low-carbon generation to complement non
 
 \noindent\textbf{Core Question:} \textit{Does long-term operation (LTO) of aging reactors offer a financially superior risk-adjusted return over new-build investments under rising cost-of-capital scenarios?}
 
-% --- Section 2: Climate Data Scientist Deliverable ---
-\section{Data Pipeline \& Geospatial Fleet Analysis}
-\textit{(Climate Data Scientist Deliverable)}
+% --- Section 2: Data Pipeline ---
+\section{Empirical Fleet Ingestion \& Geospatial Vintage}
 
 We ingest the August 2026 Global Nuclear Power Tracker \cite{gem2026tracker}, capturing 1,825 asset records worldwide (424 operating units totaling 407.80\,GW, 85 units under construction, and 535 cancelled or shelved units). The pipeline is fully automated in \texttt{src/data\_processing.py} and accessible via an interactive Streamlit dashboard (\texttt{app.py}).
 
@@ -152,7 +151,6 @@ where $\text{CRF}(r, N) = \frac{r(1+r)^N}{(1+r)^N - 1}$ is the Capital Recovery 
 
 % --- Section 4: Results & Sensitivity Tables ---
 \section{Empirical Results \& Capital Compounding}
-\textit{(Climate Risk Analyst Deliverable)}
 
 \subsection{IDC Compounding and Capital Escalation}
 \cref{fig:idc_curve} and \cref{tab:capex_table} illustrate how delays escalate project costs. At 7\% baseline WACC, an on-time Gen-III+ unit incurs \$1,835/kW in IDC (\$9,335/kW total). With a 5-year delay, total capex surges to **\$12,713/kW** (+69.5\% IDC). Under a 10\% merchant WACC with a 7-year delay, capex reaches **\$17,358/kW** (+131.4\% IDC).
@@ -215,9 +213,8 @@ As presented in \cref{fig:lcoe_chart} and \cref{tab:lcoe_table}:
     \item \textbf{SMR FOAK Economics}: SMRs produce power at \$128.65/MWh at 7\% WACC, failing to beat LTO economics prior to factory learning curves.
 \end{enumerate}
 
-% --- Section 5: Sustainability Consultant Deliverable ---
-\section{Decarbonization Levers \& Policy Playbook}
-\textit{(Sustainability Consultant Deliverable)}
+% --- Section 5: Sustainability Strategy & Decarbonization Pathways ---
+\section{Decarbonization Pathways \& Policy Strategy}
 
 \subsection{The Carbon Opportunity Cost}
 Retiring the 180.99\,GW cliff fleet forces replacement with natural gas CCGT ($400\,\text{gCO}_2/\text{kWh}$ at an 88\% CF), injecting:
@@ -229,6 +226,7 @@ into the atmosphere. This avoided carbon cliff exceeds the entire national annua
 \textit{Methodological Justification:} In high-voltage grids, intermittent renewables cannot replace synchronous thermal inertia without unbuilt multi-day battery or hydrogen storage. Empirically (e.g. California post-San Onofre, Germany post-Atomausstieg), retiring nuclear reactors is offset by gas CCGT running at baseload availability.
 
 \subsection{Strategic Decarbonization Levers}
+Benchmarking 20-year transition pathways reveals the \textit{Lead-Time Emissions Trap}: retiring the fleet and relying solely on new builds creates a 12-year construction gap during which interim gas generation emits **6.70\,Gt of replacement CO$_2$** and commits **\$2.30 Trillion** in utility capital. In contrast, 20-year LTO incurs zero replacement emissions and frees up **\$1.14 Trillion in capital arbitrage**.
 \begin{enumerate}
     \item \textbf{Prioritize LTO First}: Refurbishing the 181\,GW cliff fleet costs \$217 billion, generating a **\$1.14 Trillion capital saving** over greenfield replacement capacity.
     \item \textbf{Regulated Asset Base (RAB)}: Allowing utilities to charge consumers financing costs during construction compresses WACC from 8.5\% to 4.5\%, removing IDC debt compounding.
@@ -236,9 +234,20 @@ into the atmosphere. This avoided carbon cliff exceeds the entire national annua
     \item \textbf{Green Taxonomy Alignment}: Qualification under EU Sustainable Finance unlocks low-cost ESG debt, compressing spreads by 40--60\,bps.
 \end{enumerate}
 
-% --- Section 6: Conclusion ---
+% --- Section 6: Limitations of the Study ---
+\section{Limitations of the Study \& Data Boundaries}
+To preserve analytical transparency, several boundaries should be considered:
+\begin{enumerate}
+    \item \textit{Data Reporting Latency:} The GEM tracker aggregates government filings; historical 1970s units report COD by year or month, standardized to mid-year ($\pm 3$ months variance).
+    \item \textit{Generic Overnight Capex:} Standardized figures (\$1,200/kW LTO, \$7,500/kW Gen-III+) omit unit-specific metallurgy or unique containment geometries.
+    \item \textit{100\% CCGT Replacement Proxy:} While renewables and storage will capture a share of generation, lack of seasonal multi-day storage forces grids to empirically rely on thermal gas balancing.
+    \item \textit{Regulatory Feasibility:} 20-year LTO requires formal decennial safety approvals (e.g., ASN, US NRC) and public hearings that cannot be bypassed by economic metrics alone.
+    \item \textit{Waste Management:} Life extension expands spent fuel volumes, requiring sustained investment in deep geological repositories (e.g., Cig{\'e}o, Onkalo).
+\end{enumerate}
+
+% --- Section 7: Conclusion ---
 \section{Conclusion}
-Fleet life extension (LTO) offers the lowest-cost, lowest-risk climate finance option for low-carbon baseload electricity. Under rising interest rates and empirical construction delays, new builds suffer acute capital erosion. Preserving the 181\,GW aging fleet must be the immediate focus for utility capital allocation and energy policy.
+Fleet life extension (LTO) offers the lowest-cost, lowest-risk climate finance option for firm baseload electricity. Under rising interest rates and empirical construction delays, new builds suffer acute capital erosion. Preserving the 181\,GW aging fleet must be the immediate strategic priority for utility capital allocation and national decarbonization roadmaps.
 
 % --- Bibliography ---
 \bibliographystyle{plain}

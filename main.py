@@ -92,22 +92,23 @@ def run_pipeline() -> None:
         tables_dir=tables_dir,
         output_dir=figures_dir,
     )
-    print("[OK] All 5 figures generated successfully at 300 DPI.")
+    print("[OK] All 6 figures generated successfully at 300 DPI.")
     print(f"  * Figure 1: {figures_dir / 'fig1_construction_durations.png'}")
     print(f"  * Figure 2: {figures_dir / 'fig2_nuclear_age_pyramid_cliff.png'}")
     print(f"  * Figure 3: {figures_dir / 'fig3_idc_compounding_escalation.png'}")
     print(f"  * Figure 4: {figures_dir / 'fig4_lcoe_comparison_lto_vs_newbuild.png'}")
     print(f"  * Figure 5: {figures_dir / 'fig5_global_cliff_map.png'}")
+    print(f"  * Figure 6: {figures_dir / 'fig6_decarbonization_pathways.png'}")
 
     # -------------------------------------------------------------------------
     # PHASE 4: EXECUTIVE FINDINGS & STRATEGIC BOARDROOM SUMMARY
     # -------------------------------------------------------------------------
     elapsed = time.time() - start_time
-    print_header("Executive Summary: Key Financial & Strategic Findings")
+    print_header("Executive Summary: Sustainability Strategy Advisory Findings")
 
     print(f"""
 ================================================================================
-                    EXECUTIVE RESEARCH FINDINGS SUMMARY
+          SUSTAINABILITY STRATEGY ADVISORY: EXECUTIVE BOARDROOM FINDINGS
 ================================================================================
 
 1. THE OPERATIONAL 'CLIFF EDGE' & CARBON OPPORTUNITY COST:
@@ -151,14 +152,20 @@ def run_pipeline() -> None:
    * SMR Modular FOAK ($9,000/kW overnight):
      - On-time @ 7.0% WACC:          $128.7 / MWh  (2.90x higher than LTO)
 
-5. THE $1.14 TRILLION CAPITAL ARBITRAGE & STRATEGIC POLICY MANDATE:
-   * Capital Arbitrage: Refurbishing the 181 GW cliff fleet via LTO costs 
-     $217 Billion, saving $1.14 Trillion to $2.08 Trillion compared to 
+5. STRATEGIC PATHWAYS & THE LEAD-TIME EMISSIONS TRAP (FIGURE 6):
+   * Pathway 1 (20-Yr LTO): Refurbishing 181 GW costs $217 Billion and incurs 
+     0.0 Gt in replacement emissions (zero-carbon baseload maintained continuously).
+   * Pathway 2 (Greenfield Megaprojects): Waiting 12 years (empirical build duration) 
+     for new reactors forces the grid to burn natural gas during the lag, 
+     releasing 6.70 Gigatons of replacement CO2 and costing $2.30 Trillion.
+   * Pathway 3 (Permanent Gas Lock-in): Emits 11.16 Gigatons of CO2 over 20 years.
+
+6. THE $1.14 TRILLION CAPITAL ARBITRAGE & SUSTAINABILITY MANDATE:
+   * Capital Arbitrage: LTO saves $1.14 Trillion to $2.08 Trillion compared to 
      greenfield replacement capacity.
-   * Executive Mandate: Utilities must institutionalize an 'LTO First' doctrine.
-   * Financing Policy: New builds are economically unviable as merchant assets; 
-     they require Regulated Asset Base (RAB) or Contracts for Difference (CfD) 
-     to compress WACC below 5.0% and neutralize fatal IDC debt compounding.
+   * Strategic Recommendation: Energy ministers and utilities must adopt an 
+     'LTO First' doctrine. Greenfield new builds require Regulated Asset Base 
+     (RAB) or CfD derisking to avoid merchant balance-sheet impairment.
 ================================================================================
     """)
 
@@ -171,3 +178,4 @@ def run_pipeline() -> None:
 
 if __name__ == "__main__":
     run_pipeline()
+

@@ -1,9 +1,10 @@
 # Nuclear Capital Risk: Debt Compounding, Construction Delays, and the Economic Supremacy of Fleet Life Extension (LTO)
 
-**Authors:** Student Research Team (Climate Risk Analyst & Sustainability Consultant)  
-**Affiliation:** ESSEC Business School / AIDAMS — *Master in Data Sciences & Business Analytics*  
-**Course:** Research & Emerging Topics in Data Science: Climate Risks (Fall 2026)  
-**Keywords:** Nuclear Project Finance, Long-Term Operation (LTO), Interest During Construction (IDC), Weighted Average Cost of Capital (WACC), Levelized Cost of Electricity (LCOE), Climate Risk.
+**Authors:** Pollux Gronier, Eliott Beghin, Saty Viard Laroque, Neel Sabarwhal  
+**Designated Role:** Sustainability Consultant (*Clean Energy Transition & Capital Advisory*)  
+**Affiliation:** ESSEC Business School / AIDAMS — *MSc in Data Sciences & Business Analytics*  
+**Course:** Research & Emerging Topics in Data Science: Climate Risks (Fall 2026, Prof. Hamada Saleh)  
+**Keywords:** Nuclear Project Finance, Long-Term Operation (LTO), Interest During Construction (IDC), Weighted Average Cost of Capital (WACC), Levelized Cost of Electricity (LCOE), Climate Risk, Decarbonization.
 
 ---
 
@@ -188,21 +189,22 @@ Private merchant markets cannot bear nuclear construction risk under current mac
 2. **Contracts for Difference (CfD):** Long-term inflation-linked strike prices (e.g., Hinkley Point C) remove merchant market risk, enabling lower debt margins.
 3. **Green Taxonomy Inclusions:** Formal qualification of nuclear LTO and compliant new builds under the EU Green Taxonomy and Green Bond Principles lowers debt spreads by 30–60 basis points.
 
+### 5.3 Strategic Decarbonization Pathways (Figure 6)
+Benchmarking 20-year transition pathways (2026–2045) highlights the acute trade-off between immediate asset life extension and greenfield replacement:
+* **Pathway 1 (20-Year LTO):** Requires \$217.2 Billion ($1,200/kW) and incurs **0.0 Gt in replacement emissions**, maintaining zero-carbon baseload continuously at \$40.5–\$49.0/MWh.
+* **Pathway 2 (Greenfield Megaprojects):** Incurs \$2,301.0 Billion (\$2.30 Trillion) under empirical lead times (12 years). Crucially, during the 12-year construction gap, grids must burn natural gas to maintain grid frequency, releasing **6.70 Gigatons of replacement CO2** into the atmosphere.
+* **Pathway 3 (Fossil Lock-in):** Replacing the 181 GW fleet permanently with CCGT emits **11.16 Gigatons of CO2** over 20 years.
+
 ---
 
-## 6. External Data Integration & Project Expansion Opportunities
+## 6. Limitations of the Study & Data Boundaries
 
-To extend this quantitative framework for future academic research, the following secondary data sources should be incorporated:
-
-1. **Prof. Aswath Damodaran (NYU Stern) Regional Cost of Capital Tables:**
-   * *Dataset:* Annual updates on Sector WACC, Cost of Equity, and Country Risk Premiums (CRP).
-   * *Application:* Mapping plant-level geographic WACCs based on host country risk (e.g., US: 5.5%, France: 5.4%, India: 9.8%, Brazil: 10.4%).
-2. **IEA World Energy Outlook (WEO 2025/2026) Nuclear Projections:**
-   * *Dataset:* Regional overnight capex learning curves and Stated Policies Scenario (STEPS) vs. Net Zero Emissions (NZE) nuclear generation additions.
-   * *Application:* Modeling learning-by-doing cost reductions for modular SMRs and series-built Gen-III+ units.
-3. **IAEA Power Reactor Information System (PRIS):**
-   * *Dataset:* Asset-level historical Energy Availability Factors (EAF) and unplanned outage frequencies across reactor vintages.
-   * *Application:* Refining age-dependent degradation models for units operating between 40 and 60+ years.
+To maintain rigorous transparency, our modeling acknowledges the following analytical boundaries:
+1. **Data Completeness & Reporting Latency:** GEM tracker aggregates regulatory disclosures; older units built in the 1970s often report commercial operation only by year, standardized in our pipeline to mid-year ($\pm 3$ months variance).
+2. **Generic Overnight Capex Benchmarks:** Standardized costs (\$1,200/kW for LTO, \$7,500/kW for Gen-III+) represent industry averages and do not capture unit-specific metallurgy, unique containment geometry, or bespoke regulatory retrofits.
+3. **100% CCGT Replacement Simplification:** We model complete replacement by natural gas CCGT as a conservative empirical proxy for firm, dispatchable capacity. While wind and solar will capture part of this volume, the absence of commercial terawatt-hour seasonal storage means thermal plants empirically balance the loss of nuclear baseload.
+4. **Nuclear Safety Authority Regulatory Hurdles:** 20-Year LTO requires decennial safety reassessments (*visites décennales* by ASN in France, Subsequent License Renewals by the US NRC) and public hearings. Economic superiority does not bypass safety constraints.
+5. **Nuclear Fuel Cycle & Waste Management:** Extending the operating fleet for 20 years increases high-level nuclear waste inventory, requiring continued investment in deep geological repositories (such as Cigéo in France and Onkalo in Finland).
 
 ---
 

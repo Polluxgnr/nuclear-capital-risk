@@ -44,6 +44,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent
 DATA_PATH = PROJECT_ROOT / "data" / "processed" / "clean_nuclear_fleet.csv"
 FIG2_PATH = PROJECT_ROOT / "outputs" / "figures" / "fig2_nuclear_age_pyramid_cliff.png"
 FIG5_PATH = PROJECT_ROOT / "outputs" / "figures" / "fig5_global_cliff_map.png"
+FIG6_PATH = PROJECT_ROOT / "outputs" / "figures" / "fig6_decarbonization_pathways.png"
 
 
 # -----------------------------------------------------------------------------
@@ -134,6 +135,27 @@ def sidebar_ui() -> Tuple[float, int]:
             """
         )
 
+    # Educational Limitations Expander for Jury Inspection
+    with st.sidebar.expander("⚠️ Study & Data Limitations", expanded=False):
+        st.markdown(
+            """
+            **1. Data Reporting & Historical Approximation:**
+            * The GEM Tracker relies on reported utility filings. Older units built in the 1970s often report commercial operation by year or year-month, which our pipeline standardizes to mid-year/mid-month.
+
+            **2. Generic Overnight Capex Benchmarks:**
+            * Standard capital outlays ($1,200/kW for LTO, $7,500/kW for Gen-III+) represent industry averages and do not capture unit-specific metallurgy, unique reactor containment designs, or site-specific supply chain bottlenecks.
+
+            **3. 100% CCGT Replacement Simplification:**
+            * We model complete replacement by natural gas CCGT as an empirical proxy for firm dispatchable baseload. While intermittent renewables + battery storage will capture part of this generation, lack of multi-day seasonal storage forces real-world grids to burn natural gas to maintain grid inertia.
+
+            **4. Regulatory & Licensing Feasibility:**
+            * 20-Year LTO requires decennial safety reviews (*visites décennales* in France, Subsequent License Renewals in the US) approved by nuclear safety authorities (ASN, NRC, ONR). Financial feasibility does not bypass regulatory safety mandates.
+
+            **5. High-Level Nuclear Waste & Fuel Cycle:**
+            * Extending reactor lifetimes expands the inventory of spent nuclear fuel requiring long-term deep geological repositories (e.g., Cigéo in France, Onkalo in Finland).
+            """
+        )
+
     st.sidebar.markdown(
         "<div style='text-align: center; color: gray; font-size: 0.85em;'>"
         "ESSEC Business School / AIDAMS — Fall 2026"
@@ -160,7 +182,7 @@ def main_dashboard(df: pd.DataFrame, wacc: float, delay_years: int) -> None:
     """
     st.title("⚛️ Nuclear Project Finance & Fleet Life Extension (LTO)")
     st.markdown(
-        "**Master's Thesis Interactive Simulator** | ESSEC Business School / AIDAMS | "
+        "**Sustainability Strategy & Clean Energy Transition Advisory** | ESSEC Business School / AIDAMS | "
         "Pollux Gronier, Eliott Beghin, Saty Viard Laroque, Neel Sabarwhal"
     )
 
@@ -329,12 +351,23 @@ def main_dashboard(df: pd.DataFrame, wacc: float, delay_years: int) -> None:
     # -------------------------------------------------------------------------
     st.subheader("🗺️ Global Empirical Assets & 2035 Impact Shockwave")
 
-    tab1, tab2 = st.tabs([
+    tab1, tab2, tab3 = st.tabs([
+        "Strategic Decarbonization Pathways (Figure 6)",
         "1x2 Geospatial Impact Map (Figure 5)",
         "The 2026 Global Nuclear Age Pyramid (Figure 2)",
     ])
 
     with tab1:
+        if FIG6_PATH.exists():
+            st.image(
+                str(FIG6_PATH),
+                caption="Figure 6: Sustainability Advisory Matrix: Capital Outlay vs. Cumulative Decarbonization Lag (2026–2045).",
+                use_container_width=True,
+            )
+        else:
+            st.warning("Figure 6 not found. Run `python main.py` to render it.")
+
+    with tab2:
         if FIG5_PATH.exists():
             st.image(
                 str(FIG5_PATH),
@@ -344,7 +377,7 @@ def main_dashboard(df: pd.DataFrame, wacc: float, delay_years: int) -> None:
         else:
             st.warning("Figure 5 not found. Run `python main.py` to render it.")
 
-    with tab2:
+    with tab3:
         if FIG2_PATH.exists():
             st.image(
                 str(FIG2_PATH),
