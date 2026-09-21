@@ -92,13 +92,15 @@ def run_pipeline() -> None:
         tables_dir=tables_dir,
         output_dir=figures_dir,
     )
-    print("[OK] All 6 figures generated successfully at 300 DPI.")
+    print("[OK] All 8 figures generated successfully at 300 DPI.")
     print(f"  * Figure 1: {figures_dir / 'fig1_construction_durations.png'}")
     print(f"  * Figure 2: {figures_dir / 'fig2_nuclear_age_pyramid_cliff.png'}")
     print(f"  * Figure 3: {figures_dir / 'fig3_idc_compounding_escalation.png'}")
     print(f"  * Figure 4: {figures_dir / 'fig4_lcoe_comparison_lto_vs_newbuild.png'}")
     print(f"  * Figure 5: {figures_dir / 'fig5_global_cliff_map.png'}")
     print(f"  * Figure 6: {figures_dir / 'fig6_decarbonization_pathways.png'}")
+    print(f"  * Figure 7: {figures_dir / 'fig7_lcoe_risk_heatmap.png'}")
+    print(f"  * Figure 8: {figures_dir / 'fig8_national_cliff_breakdown.png'}")
 
     # -------------------------------------------------------------------------
     # PHASE 4: EXECUTIVE FINDINGS & STRATEGIC BOARDROOM SUMMARY
@@ -140,7 +142,7 @@ def run_pipeline() -> None:
    * In contrast, 20-year LTO ($1,200/kW overnight, 2y execution) accrues 
      minimal IDC, remaining strictly bounded between $1,248/kW and $1,348/kW.
 
-4. LCOE COMPETITIVENESS & RISK-ADJUSTED DOMINANCE:
+4. LCOE COMPETITIVENESS & RISK-ADJUSTED DOMINANCE (HEATMAP FIGURE 7):
    * 20-Year LTO offers an ultra-competitive, inflation-resilient LCOE:
      - WACC 4.0%:  $40.5 / MWh
      - WACC 7.0%:  $44.4 / MWh
@@ -160,7 +162,14 @@ def run_pipeline() -> None:
      releasing 6.70 Gigatons of replacement CO2 and costing $2.30 Trillion.
    * Pathway 3 (Permanent Gas Lock-in): Emits 11.16 Gigatons of CO2 over 20 years.
 
-6. THE $1.14 TRILLION CAPITAL ARBITRAGE & SUSTAINABILITY MANDATE:
+6. GEOGRAPHIC SOVEREIGNTY & NATIONAL CLIFF EXPOSURE (FIGURE 8):
+   * Over 70% of the 181 GW cliff is concentrated in three OECD jurisdictions: 
+     United States (76.4 GW, 235 Mt CO2/yr at stake), France (43.2 GW, 133 Mt CO2/yr), 
+     and Japan (12.2 GW, 38 Mt CO2/yr).
+   * National regulators (US NRC, French ASN) hold the keys to Western decarbonization: 
+     streamlining decennial safety reviews is the single highest-impact climate policy.
+
+7. THE $1.14 TRILLION CAPITAL ARBITRAGE & SUSTAINABILITY MANDATE:
    * Capital Arbitrage: LTO saves $1.14 Trillion to $2.08 Trillion compared to 
      greenfield replacement capacity.
    * Strategic Recommendation: Energy ministers and utilities must adopt an 

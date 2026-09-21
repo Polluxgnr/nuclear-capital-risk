@@ -3,12 +3,15 @@
 ESSEC / AIDAMS - Research & Emerging Topics in Data Science: Climate Risks (Fall 2026)
 Course Project: Nuclear Project Finance & Fleet Life Extension (LTO)
 
-Generates 5 publication-grade figures (300 DPI):
+Generates 8 publication-grade figures (300 DPI):
 - Fig 1: Empirical distribution of construction durations by technology and geography.
 - Fig 2: The 2026 Global Nuclear Age Pyramid highlighting the 40+ year cliff (181 GW at stake).
 - Fig 3: Capex escalation & IDC compounding curve as a function of construction delays (0 to 10 years).
 - Fig 4: LCOE comparison chart: 20-year LTO vs On-time Gen-III+ vs Delayed Gen-III+.
 - Fig 5: 1x2 Geospatial Impact Map: 2026 Baseline vs 2035 Without LTO (visualizing the nuclear desert).
+- Fig 6: Sustainability Advisory Matrix: Capital Outlay vs Cumulative Emissions (2026-2045).
+- Fig 7: 2D LCOE Risk Sensitivity Heatmap across WACC and Schedule Slippage.
+- Fig 8: National Sovereignty & Decarbonization Risk: Top 10 Nuclear Fleets Facing the 40-Year Cliff.
 """
 
 from __future__ import annotations
@@ -781,6 +784,186 @@ def plot_figure_6_transition_pathways(
 
 
 # =============================================================================
+# FIGURE 7: 2D LCOE RISK SENSITIVITY HEATMAP
+# =============================================================================
+
+def plot_figure_7_lcoe_heatmap(
+    df_lcoe: pd.DataFrame,
+    output_path: Path,
+) -> None:
+    r"""Figure 7: 2D Annotated Heatmap of Gen-III+ LCOE across WACC and Schedule Delays.
+
+    Why this chart is essential for Sustainability Strategy Consulting:
+    A board of directors needs an immediate look-up matrix to assess risk boundaries.
+    By color-coding cells against the wholesale electricity price corridor ($60–$90/MWh):
+    - Green/Yellow zones represent economically viable generation.
+    - Orange zones represent merchant breakeven territory.
+    - Dark red/crimson zones represent balance-sheet destruction (> $130/MWh).
+    - An accompanying callout highlights LTO's complete insulation at $40.5–$49.0/MWh.
+
+    Parameters
+    ----------
+    df_lcoe : pd.DataFrame
+        LCOE sensitivity grid dataframe.
+    output_path : Path
+        Target save path.
+    """
+    logger.info("Generating Figure 7: 2D LCOE Sensitivity Risk Heatmap...")
+
+    gen3_sub = df_lcoe[df_lcoe["Technology"] == "Gen-III+"].copy()
+    pivot_table = gen3_sub.pivot(index="WACC", columns="Delay_Years", values="LCOE_Total")
+
+    # Format WACC index as clean percentages
+    pivot_table.index = [f"{w*100:.1f}%" for w in pivot_table.index]
+    pivot_table.columns = [f"+{int(c)}y ({int(c)+7}y COD)" for c in pivot_table.columns]
+
+    fig, ax = plt.subplots(figsize=(12, 6.5))
+
+    # Custom colormap from muted green-yellow through orange to deep crimson
+    cmap = sns.color_palette("YlOrRd", as_cmap=True)
+
+    sns.heatmap(
+        pivot_table,
+        annot=True,
+        fmt=".1f",
+        cmap=cmap,
+        cbar_kws={"label": "Levelized Cost of Electricity ($/MWh)"},
+        linewidths=1.2,
+        linecolor="#ffffff",
+        ax=ax,
+        vmin=60,
+        vmax=220,
+    )
+
+    ax.set_title(
+        "Figure 7: Gen-III+ Levelized Cost of Electricity (USD/MWh) Risk Matrix\n"
+        "Benchmark: Wholesale Baseload Power Band = USD 60–90/MWh | 20-Yr LTO = USD 40.5–49.0/MWh (Immune)",
+        fontweight="bold", pad=15, fontsize=12,
+    )
+    ax.set_xlabel("Construction Schedule Slippage (Years beyond 7y baseline)", labelpad=10, fontweight="bold")
+    ax.set_ylabel("Macro Weighted Average Cost of Capital (WACC)", labelpad=10, fontweight="bold")
+
+    # Annotate safe zone vs crisis zone
+    ax.text(
+        0.5, -0.15,
+        "INTERPRETATION: Yellow cells (< USD 80/MWh) require state de-risking (RAB/CfD) to achieve bankability. "
+        "Orange/Red cells (> USD 100/MWh) represent unbankable merchant assets.\n"
+        "20-Yr LTO remains between USD 40.5/MWh (4% WACC) and USD 49.0/MWh (10% WACC) across all scenarios.",
+        ha="center", va="top", transform=ax.transAxes, fontsize=9.5, style="italic", color="#1e293b",
+        bbox=dict(boxstyle="round,pad=0.4", facecolor="#f1f5f9", edgecolor="#cbd5e1"),
+    )
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300)
+    plt.close()
+    logger.info(f"Figure 7 saved to: {output_path}")
+
+
+# =============================================================================
+# FIGURE 8: NATIONAL CLIFF EXPOSURE & REGIONAL CARBON RISK
+# =============================================================================
+
+def plot_figure_8_national_cliff_breakdown(
+    df: pd.DataFrame,
+    output_path: Path,
+) -> None:
+    r"""Figure 8: Country-Level Decarbonization Risk: Top 10 Nuclear Fleets Facing the 40-Year Cliff.
+
+    Why this chart is essential for Energy Ministries & National Policy:
+    Nuclear life extension is governed nationally (NRC in the US, ASN in France,
+    NRA in Japan). This figure isolates where the 181 GW cliff is physically located,
+    and quantifies the territorial carbon penalty each country faces if its fleet retires.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Cleaned fleet dataframe.
+    output_path : Path
+        Target save path.
+    """
+    logger.info("Generating Figure 8: National Cliff Exposure & Regional Carbon Risk...")
+
+    op_df = df[df["Clean_Status"] == "operating"].copy()
+    cliff_df = op_df[op_df["Cliff_Edge_40plus"]].copy()
+
+    # Aggregate by country (GEM tracker column is 'Country/Area')
+    country_col = "Country/Area" if "Country/Area" in cliff_df.columns else "Country"
+    country_cliff = (
+        cliff_df.groupby(country_col)
+        .agg(
+            Cliff_GW=("Capacity_GW", "sum"),
+            Reactor_Count=("Capacity_GW", "count"),
+        )
+        .sort_values("Cliff_GW", ascending=False)
+        .head(10)
+    )
+
+    # Calculate avoided CO2 Mt/year by country (400 g/kWh @ 88% CF)
+    country_cliff["Avoided_CO2_Mt"] = (country_cliff["Cliff_GW"] * 1e6 * 8760.0 * 0.88 * 400.0) / 1e12
+
+    fig, axes = plt.subplots(1, 2, figsize=(16, 6.5))
+
+    # Panel A: Cliff Capacity by Country (GW)
+    colors_a = sns.color_palette("Blues_r", len(country_cliff))
+    bars_a = axes[0].barh(
+        country_cliff.index[::-1],
+        country_cliff["Cliff_GW"][::-1],
+        color=colors_a[::-1],
+        edgecolor="#1a1a1a",
+        linewidth=0.7,
+    )
+    axes[0].set_title("(A) 40+ Year Nuclear Fleet Capacity at Stake by Country (GW)", fontweight="bold", pad=12, fontsize=11.5)
+    axes[0].set_xlabel("Operational Cliff Capacity (GW)", labelpad=8, fontweight="bold")
+    axes[0].grid(True, linestyle="--", alpha=0.6, axis="x")
+
+    for bar in bars_a:
+        width = bar.get_width()
+        axes[0].annotate(
+            f"{width:.1f} GW",
+            xy=(width, bar.get_y() + bar.get_height() / 2),
+            xytext=(6, 0),
+            textcoords="offset points",
+            va="center", ha="left",
+            fontsize=9, fontweight="bold",
+        )
+    axes[0].set_xlim(0, max(country_cliff["Cliff_GW"]) * 1.18)
+
+    # Panel B: Avoided Carbon Emissions by Country (Mt CO2 / year)
+    colors_b = sns.color_palette("Reds_r", len(country_cliff))
+    bars_b = axes[1].barh(
+        country_cliff.index[::-1],
+        country_cliff["Avoided_CO2_Mt"][::-1],
+        color=colors_b[::-1],
+        edgecolor="#1a1a1a",
+        linewidth=0.7,
+    )
+    axes[1].set_title("(B) Annual Avoided CO2 Emissions at Stake (Mt CO2/yr vs. CCGT)", fontweight="bold", pad=12, fontsize=11.5)
+    axes[1].set_xlabel("Avoided Carbon Volume (Million Metric Tons CO2 / year)", labelpad=8, fontweight="bold")
+    axes[1].grid(True, linestyle="--", alpha=0.6, axis="x")
+
+    for bar in bars_b:
+        width = bar.get_width()
+        axes[1].annotate(
+            f"{width:.1f} Mt/yr",
+            xy=(width, bar.get_y() + bar.get_height() / 2),
+            xytext=(6, 0),
+            textcoords="offset points",
+            va="center", ha="left",
+            fontsize=9, fontweight="bold",
+        )
+    axes[1].set_xlim(0, max(country_cliff["Avoided_CO2_Mt"]) * 1.18)
+
+    plt.suptitle(
+        "Figure 8: National Clean Baseload Exposure: Top 10 Nuclear Fleets Facing the 40-Year Operational Cliff",
+        fontweight="bold", y=1.02, fontsize=13.5,
+    )
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300)
+    plt.close()
+    logger.info(f"Figure 8 saved to: {output_path}")
+
+
+# =============================================================================
 # MASTER ORCHESTRATOR
 # =============================================================================
 
@@ -789,7 +972,7 @@ def generate_all_figures(
     tables_dir: Optional[Union[str, Path]] = None,
     output_dir: Optional[Union[str, Path]] = None,
 ) -> None:
-    """Orchestrate generation and export of all 6 publication-ready figures."""
+    """Orchestrate generation and export of all 8 publication-ready figures."""
     project_root = Path(__file__).resolve().parent.parent
 
     if data_path is None:
@@ -830,6 +1013,8 @@ def generate_all_figures(
     fig4_path = output_dir / "fig4_lcoe_comparison_lto_vs_newbuild.png"
     fig5_path = output_dir / "fig5_global_cliff_map.png"
     fig6_path = output_dir / "fig6_decarbonization_pathways.png"
+    fig7_path = output_dir / "fig7_lcoe_risk_heatmap.png"
+    fig8_path = output_dir / "fig8_national_cliff_breakdown.png"
 
     plot_figure_1_construction_durations(df, fig1_path)
     plot_figure_2_age_pyramid_cliff(df, fig2_path)
@@ -837,10 +1022,13 @@ def generate_all_figures(
     plot_figure_4_lcoe_comparison(df_lcoe, fig4_path)
     plot_fig5_geospatial_cliff(df, fig5_path)
     plot_figure_6_transition_pathways(fig6_path)
+    plot_figure_7_lcoe_heatmap(df_lcoe, fig7_path)
+    plot_figure_8_national_cliff_breakdown(df, fig8_path)
 
-    logger.info("All 6 publication figures successfully rendered at 300 DPI.")
+    logger.info("All 8 publication figures successfully rendered at 300 DPI.")
 
 
 if __name__ == "__main__":
     generate_all_figures()
+
 

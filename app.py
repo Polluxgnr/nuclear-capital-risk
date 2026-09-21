@@ -45,6 +45,8 @@ DATA_PATH = PROJECT_ROOT / "data" / "processed" / "clean_nuclear_fleet.csv"
 FIG2_PATH = PROJECT_ROOT / "outputs" / "figures" / "fig2_nuclear_age_pyramid_cliff.png"
 FIG5_PATH = PROJECT_ROOT / "outputs" / "figures" / "fig5_global_cliff_map.png"
 FIG6_PATH = PROJECT_ROOT / "outputs" / "figures" / "fig6_decarbonization_pathways.png"
+FIG7_PATH = PROJECT_ROOT / "outputs" / "figures" / "fig7_lcoe_risk_heatmap.png"
+FIG8_PATH = PROJECT_ROOT / "outputs" / "figures" / "fig8_national_cliff_breakdown.png"
 
 
 # -----------------------------------------------------------------------------
@@ -351,8 +353,10 @@ def main_dashboard(df: pd.DataFrame, wacc: float, delay_years: int) -> None:
     # -------------------------------------------------------------------------
     st.subheader("🗺️ Global Empirical Assets & 2035 Impact Shockwave")
 
-    tab1, tab2, tab3 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "Strategic Decarbonization Pathways (Figure 6)",
+        "2D LCOE Sensitivity Risk Heatmap (Figure 7)",
+        "National Cliff Exposure & Carbon Risk (Figure 8)",
         "1x2 Geospatial Impact Map (Figure 5)",
         "The 2026 Global Nuclear Age Pyramid (Figure 2)",
     ])
@@ -364,25 +368,65 @@ def main_dashboard(df: pd.DataFrame, wacc: float, delay_years: int) -> None:
                 caption="Figure 6: Sustainability Advisory Matrix: Capital Outlay vs. Cumulative Decarbonization Lag (2026–2045).",
                 use_container_width=True,
             )
+            st.info(
+                "**Strategic Insight:** Pathway A (LTO First, New Build Parallel) averts 1,398 Mt CO2 cumulative emissions "
+                "with an upfront capital outlay 6.4x lower than an aggressive new-build push, bridging the 2035 decarbonization gap."
+            )
         else:
             st.warning("Figure 6 not found. Run `python main.py` to render it.")
 
     with tab2:
+        if FIG7_PATH.exists():
+            st.image(
+                str(FIG7_PATH),
+                caption="Figure 7: 2D LCOE Sensitivity Heatmap: Gen-III+ New Build Delay & WACC Matrix vs. LTO Flat Resilience.",
+                use_container_width=True,
+            )
+            st.info(
+                "**Strategic Insight:** At 8.0% WACC and a 6-year delay, Gen-III+ LCOE escalates to $157.8/MWh, breaching wholesale power price bands. "
+                "In contrast, 20-Yr LTO preserves power generation at $40.5–$49.0/MWh regardless of delays due to minimal IDC exposure."
+            )
+        else:
+            st.warning("Figure 7 not found. Run `python main.py` to render it.")
+
+    with tab3:
+        if FIG8_PATH.exists():
+            st.image(
+                str(FIG8_PATH),
+                caption="Figure 8: National Sovereignty & Decarbonization Cliff: Top 10 Nuclear Fleets Facing the 40-Year Operational Cliff.",
+                use_container_width=True,
+            )
+            st.info(
+                "**Strategic Insight:** The US (76.4 GW, 235 Mt CO2/yr) and France (43.2 GW, 133 Mt CO2/yr) concentrate 66% of the global 40+ year cliff. "
+                "Unplanned phaseouts in these nations represent systemic decarbonization and grid security risks."
+            )
+        else:
+            st.warning("Figure 8 not found. Run `python main.py` to render it.")
+
+    with tab4:
         if FIG5_PATH.exists():
             st.image(
                 str(FIG5_PATH),
                 caption="Figure 5: Geospatial shockwave of the 40-year cliff: 2026 Baseline vs. 2035 Without LTO (The Nuclear Desert).",
                 use_container_width=True,
             )
+            st.info(
+                "**Strategic Insight:** Without life extensions, North America and Western Europe face a severe 'nuclear desert' by 2035, "
+                "collapsing clean baseload generation before Gen-III+ new builds can achieve commercial operation."
+            )
         else:
             st.warning("Figure 5 not found. Run `python main.py` to render it.")
 
-    with tab3:
+    with tab5:
         if FIG2_PATH.exists():
             st.image(
                 str(FIG2_PATH),
                 caption="Figure 2: The 2026 Global Nuclear Age Pyramid highlighting the 181.0 GW (44.4%) operational cliff edge.",
                 use_container_width=True,
+            )
+            st.info(
+                "**Strategic Insight:** The global nuclear fleet is experiencing an acute demographic squeeze, with the largest age cohort (35–45 years old) "
+                "clustered at the terminal boundary of design lifetime."
             )
         else:
             st.warning("Figure 2 not found. Run `python main.py` to render it.")

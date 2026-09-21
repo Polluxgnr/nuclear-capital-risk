@@ -2,7 +2,7 @@
 name = "nuclear-capital-risk"
 version = "0.1.0"
 description = "Empirical and Financial Assessment of Nuclear Project Finance & Fleet Life Extension (LTO)"
-authors = ["Climate Risk Analyst & Sustainability Consultant <student@essec.edu>"]
+authors = ["Sustainability Consultant <student@essec.edu>"]
 channels = ["conda-forge"]
 platforms = ["win-64", "linux-64", "osx-arm64", "osx-64"]
 
